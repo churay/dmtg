@@ -6,7 +6,8 @@ import lxml, lxml.html, requests
 ### Module Functions ###
 
 def fetch_set(set_name):
-    fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
+    base_url = 'http://gatherer.wizards.com/Pages/Search'
+    fetch_url = '%s/Default.aspx' % base_url
     fetch_cpp = 100
 
     fetch_base_params = {'output': 'standard', 'action': 'advanced',
@@ -24,7 +25,7 @@ def fetch_set(set_name):
 
     ## Query Each Page for Cards in Set  ##
 
-    set_cards = []
+    set_cards = {}
 
     for page_index in range(set_pages):
         fetch_page_params = dict(fetch_base_params, **{'page': page_index})
@@ -37,7 +38,11 @@ def fetch_set(set_name):
             page_card_name_raw = page_card_elem[1][1][0].text_content()
             page_card_name  = unicode(page_card_name_raw).encode('utf-8').strip()
 
-            set_cards.append(page_card_name)
+            page_card_img_rurl = page_card_elem[0][1][0].get('src')
+            page_card_img_url = '%s/%s' % (base_url, page_card_img_rurl)
+            # page_card_result = requests.get(page_card_image_url)
+
+            set_cards[page_card_name] = page_card_img_url
 
     return set_cards
 
