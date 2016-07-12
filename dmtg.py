@@ -8,7 +8,7 @@ import dmtg
 ### Main Entry Point ###
 
 def main():
-    print dmtg.fetch_set('hello')
+    print dmtg.fetch_set('Conspiracy')
 
 ### Miscellaneous ###
 
