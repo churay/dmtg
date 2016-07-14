@@ -15,7 +15,7 @@ def fetch_set(set_name):
 
     fetch_cpp = 100
     fetch_base_params = {'output': 'compact', 'action': 'advanced',
-        'set': '+["%s"]' % set_name}
+        'set': '+["%s"]' % set_name.upper()}
 
     any_mana_regex = r'(%s)' % '|'.join(mana_colors)
     one_mana_regex = r'^%s$' % any_mana_regex

@@ -9,7 +9,7 @@ import pprint
 ### Main Entry Point ###
 
 def main():
-    pprint.pprint(dmtg.fetch_set('RTR'))
+    pprint.pprint(dmtg.mtg.fetch_set('RTR'))
 
 ### Miscellaneous ###
 

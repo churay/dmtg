@@ -1,1 +1,2 @@
-from mtg import *
+from dmtg import *
+import mtg, tts
