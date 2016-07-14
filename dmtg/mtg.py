@@ -84,7 +84,3 @@ def fetch_set(set_name):
             })
 
     return set_cards
-
-### Module Helpers ###
-
-

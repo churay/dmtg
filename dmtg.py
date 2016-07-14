@@ -4,12 +4,11 @@ __doc__ = '''Module for DMTG (Draft Magic the Gathering) Console Interface'''
 
 import os, optparse
 import dmtg
-import pprint
 
 ### Main Entry Point ###
 
 def main():
-    pprint.pprint(dmtg.mtg.fetch_set('RTR'))
+    dmtg.export_set_files('RTR')
 
 ### Miscellaneous ###
 
