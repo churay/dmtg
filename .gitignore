@@ -57,5 +57,7 @@ local_settings.py
 # virtualenv
 venv/
 
-# Output files
+# Other files
 out/
+*.swp
+*.swo

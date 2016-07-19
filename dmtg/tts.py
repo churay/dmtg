@@ -1,6 +1,6 @@
 __doc__ = '''Module for Tabletop Simulator Processing/Exporting Functions'''
 
-import re, math
+import re, math, string
 import os, io
 import requests
 
@@ -11,6 +11,7 @@ from StringIO import StringIO
 
 src_dir = os.path.dirname(os.path.relpath(__file__))
 out_dir = os.path.join(os.path.dirname(src_dir), 'out')
+etc_dir = os.path.join(os.path.dirname(src_dir), 'etc')
 
 ### Module Functions ###
 
@@ -50,22 +51,60 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
         deckfile_image = Image.new('RGB', deckfile_dims, 'white')
 
-        for card_idx in range(deckfile_cpf * deckfile_idx + deckfile_cards):
+        for card_didx, card_idx in enumerate(range(deckfile_cpf * deckfile_idx + deckfile_cards)):
             card_path = os.path.join(deckfile_indir, '%d.jpeg' % card_idx)
             card_image = Image.open(card_path)
             deckfile_card_image = card_image if card_image.size == set_card_dims \
                 else card_image.resize(set_card_dims)
 
-            card_didx = card_idx % deckfile_cpf
-            card_xyidx = (card_didx % deckfile_cpd[0], int(card_didx / float(deckfile_cpd[0])))
-            deckfile_image.paste(deckfile_card_image, tuple(cdv * dpc for cdv, dpc in zip(card_xyidx, set_card_dims)))
+            deckfile_card_coords = (
+                int(card_didx % deckfile_cpd[0]) * set_card_dims[0],
+                int(card_didx / float(deckfile_cpd[0])) * set_card_dims[1],
+            )
+            deckfile_image.paste(deckfile_card_image, deckfile_card_coords)
             del deckfile_card_image, card_image
 
         deckfile_image.save(deckfile_path)
         del deckfile_image
 
 def export_set_datafiles(set_name, set_cards):
-    pass
+    datafile_outdir = os.path.join(out_dir, '%s-out' % set_name.lower())
+    _make_export_dirs(datafile_outdir)
+
+    # Import the Data File Templates #
+
+    datafile_path = os.path.join(etc_dir, 'tts-datafile.lua')
+    with file(datafile_path, 'r') as datafile:
+        datafile_template = string.Template(datafile.read())
+
+    cardfile_path = os.path.join(etc_dir, 'tts-cardfile.lua')
+    with file(cardfile_path, 'r') as cardfile:
+        cardfile_template = string.Template(cardfile.read())
+
+    # Export the Data Strings for Each Card #
+
+    set_card_strs = []
+    for set_card in set_cards:
+        set_card_str = cardfile_template.substitute(
+            card_id=set_card['id'],
+            card_name='"%s"' % set_card['name'],
+            card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
+            card_cost=set_card['cost'],
+            card_rarity='"%s"' % set_card['rarity'],
+        )
+
+        set_card_strs.append(set_card_str)
+
+    # Export the Data Files for the Set #
+
+    datafile_name = 'magic-%s.lua' % set_name.lower()
+    datafile_path = os.path.join(datafile_outdir, datafile_name)
+
+    with file(datafile_path, 'w') as datafile:
+        datafile.write(datafile_template.substitute(
+            set_name=set_name.lower(),
+            set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
+        ))
 
 ### Module Helpers ###
 
