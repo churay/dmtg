@@ -33,8 +33,10 @@ def fetch_set(set_name):
         with open(set_path, 'r') as set_file:
             set_tsvfile = csv.DictReader(set_file, delimiter='\t')
             for set_entry in enumerate(set_tsvfile):
-                set_entry[1]['colors'] = set_entry[1]['colors'].split(',')
-                set_cards.append(set_entry[1])
+                set_entry = set_entry[1]
+                set_entry['colors'] = set_entry['colors'].split(',')
+                set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
+                set_cards.append(set_entry)
 
         return set_cards
 
