@@ -56,3 +56,6 @@ local_settings.py
 
 # virtualenv
 venv/
+
+# Output files
+out/
