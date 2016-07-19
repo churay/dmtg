@@ -1,17 +1,12 @@
 __doc__ = '''Module for Tabletop Simulator Processing/Exporting Functions'''
 
+import dmtg
 import re, math, string
 import os, io
 import requests
 
 from PIL import Image
 from StringIO import StringIO
-
-### Module Constants ###
-
-src_dir = os.path.dirname(os.path.relpath(__file__))
-out_dir = os.path.join(os.path.dirname(src_dir), 'out')
-etc_dir = os.path.join(os.path.dirname(src_dir), 'etc')
 
 ### Module Functions ###
 
@@ -20,9 +15,7 @@ def export_set_deckfiles(set_name, set_cards):
     deckfile_count = int(math.ceil(len(set_cards) / float(deckfile_cpf)))
     set_card_dims = ( float('inf'), float('inf') )
 
-    deckfile_indir = os.path.join(out_dir, '%s-in' % set_name.lower())
-    deckfile_outdir = os.path.join(out_dir, '%s-out' % set_name.lower())
-    _make_export_dirs(deckfile_indir, deckfile_outdir)
+    deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_name)
 
     ## Import the Image Files for All Cards in the Set ##
 
@@ -51,7 +44,9 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
         deckfile_image = Image.new('RGB', deckfile_dims, 'white')
 
-        for card_didx, card_idx in enumerate(range(deckfile_cpf * deckfile_idx + deckfile_cards)):
+        for card_didx in range(deckfile_cards):
+            card_idx = deckfile_cpf * deckfile_idx + card_didx
+
             card_path = os.path.join(deckfile_indir, '%d.jpeg' % card_idx)
             card_image = Image.open(card_path)
             deckfile_card_image = card_image if card_image.size == set_card_dims \
@@ -68,16 +63,15 @@ def export_set_deckfiles(set_name, set_cards):
         del deckfile_image
 
 def export_set_datafiles(set_name, set_cards):
-    datafile_outdir = os.path.join(out_dir, '%s-out' % set_name.lower())
-    _make_export_dirs(datafile_outdir)
+    datafile_indir, datafile_outdir = dmtg.make_set_dirs(set_name)
 
     # Import the Data File Templates #
 
-    datafile_path = os.path.join(etc_dir, 'tts-datafile.lua')
+    datafile_path = os.path.join(dmtg.tmpl_dir, 'tts-datafile.lua')
     with file(datafile_path, 'r') as datafile:
         datafile_template = string.Template(datafile.read())
 
-    cardfile_path = os.path.join(etc_dir, 'tts-cardfile.lua')
+    cardfile_path = os.path.join(dmtg.tmpl_dir, 'tts-cardfile.lua')
     with file(cardfile_path, 'r') as cardfile:
         cardfile_template = string.Template(cardfile.read())
 
@@ -105,10 +99,3 @@ def export_set_datafiles(set_name, set_cards):
             set_name=set_name.lower(),
             set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
         ))
-
-### Module Helpers ###
-
-def _make_export_dirs(*export_dirs):
-    for export_dir in export_dirs:
-        if not os.path.exists(export_dir):
-            os.makedirs(export_dir)

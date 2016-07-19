@@ -1,6 +1,8 @@
 __doc__ = '''Module for Magic the Gathering Fetcher/Processor Functions'''
 
-import re, math
+import dmtg
+import re, math, copy
+import os, csv
 import lxml, lxml.html, requests
 
 ### Module Constants ###
@@ -12,6 +14,7 @@ mana_colors = ['green', 'blue', 'red', 'white', 'black']
 def fetch_set(set_name):
     fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
     cards_url = 'http://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid='
+    set_indir, set_outdir = dmtg.make_set_dirs(set_name)
 
     fetch_cpp = 100
     fetch_base_params = {'output': 'compact', 'action': 'advanced',
@@ -20,6 +23,20 @@ def fetch_set(set_name):
     any_mana_regex = r'(%s)' % '|'.join(mana_colors)
     one_mana_regex = r'^%s$' % any_mana_regex
     multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
+
+    set_cards = []
+
+    ## Determine Existence of Local Set Data ##
+
+    set_path = os.path.join(set_indir, '%s.tsv' % set_name.lower())
+    if os.path.isfile(set_path):
+        with open(set_path, 'r') as set_file:
+            set_tsvfile = csv.DictReader(set_file, delimiter='\t')
+            for set_entry in enumerate(set_tsvfile):
+                set_entry[1]['colors'] = set_entry[1]['colors'].split(',')
+                set_cards.append(set_entry[1])
+
+        return set_cards
 
     ## Determine Number of Pages in Set ##
 
@@ -32,8 +49,6 @@ def fetch_set(set_name):
     set_pages = int(math.ceil(set_length / float(fetch_cpp)))
 
     ## Query Each Page for Cards in Set  ##
-
-    set_cards = []
 
     for page_index in range(set_pages):
         fetch_page_params = dict(fetch_base_params, **{'page': page_index})
@@ -82,5 +97,15 @@ def fetch_set(set_name):
                 'rarity': card_rarity,
                 'url': card_url,
             })
+
+    ## Save Queried Cards to Local Data File ##
+
+    with open(set_path, 'w+') as set_file:
+        set_tsvfile = csv.DictWriter(set_file, delimiter='\t', fieldnames=set_cards[0].keys())
+        set_tsvfile.writeheader()
+        for set_card in set_cards:
+            set_card_dict = copy.copy(set_card)
+            set_card_dict['colors'] = ','.join(set_card_dict['colors'])
+            set_tsvfile.writerow(set_card_dict)
 
     return set_cards
