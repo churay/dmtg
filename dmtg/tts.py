@@ -15,11 +15,13 @@ def export_set_deckfiles(set_name, set_cards):
     deckfile_count = int(math.ceil(len(set_cards) / float(deckfile_cpf)))
     set_card_dims = ( float('inf'), float('inf') )
 
+    print('exporting deck file for set %s...' % set_name)
     deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_name)
 
     ## Import the Image Files for All Cards in the Set ##
 
     for set_card_idx, set_card in enumerate(set_cards):
+        dmtg.display_status('card', set_card_idx, len(set_cards))
         set_card_path = os.path.join(deckfile_indir, '%d.jpeg' % set_card_idx)
 
         if not os.path.isfile(set_card_path):
@@ -37,6 +39,7 @@ def export_set_deckfiles(set_name, set_cards):
     deckfile_dims = tuple(cpd*ppc for cpd, ppc in zip(deckfile_cpd, set_card_dims))
 
     for deckfile_idx in range(deckfile_count):
+        dmtg.display_status('deck file', deckfile_idx, deckfile_count)
         deckfile_cards = deckfile_cpf if deckfile_idx != deckfile_count - 1 \
             else deckfile_count % deckfile_cpf
 
@@ -62,7 +65,10 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_image.save(deckfile_path)
         del deckfile_image
 
+    print('exported new deck file for set %s.' % set_name)
+
 def export_set_datafiles(set_name, set_cards):
+    print('exporting data file for set %s...' % set_name)
     datafile_indir, datafile_outdir = dmtg.make_set_dirs(set_name)
 
     # Import the Data File Templates #
@@ -99,3 +105,5 @@ def export_set_datafiles(set_name, set_cards):
             set_name=set_name.lower(),
             set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
         ))
+
+    print('exported data file for set %s.' % set_name)

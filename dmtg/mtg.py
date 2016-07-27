@@ -2,7 +2,7 @@ __doc__ = '''Module for Magic the Gathering Fetcher/Processor Functions'''
 
 import dmtg
 import re, math, copy
-import os, csv
+import os, sys, csv
 import lxml, lxml.html, requests
 
 ### Module Constants ###
@@ -24,6 +24,7 @@ def fetch_set(set_name):
     one_mana_regex = r'^%s$' % any_mana_regex
     multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
 
+    print('fetching card data for set %s...' % set_name)
     set_cards = []
 
     ## Determine Existence of Local Set Data ##
@@ -38,9 +39,12 @@ def fetch_set(set_name):
                 set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
                 set_cards.append(set_entry)
 
+        print('fetched local card data for set %s.' % set_name)
         return set_cards
 
     ## Determine Number of Pages in Set ##
+
+    print('  fetching card set metadata...')
 
     fetch_first_params = dict(fetch_base_params, **{'page': 0})
     first_result = requests.get(fetch_url, params=fetch_first_params)
@@ -53,6 +57,8 @@ def fetch_set(set_name):
     ## Query Each Page for Cards in Set  ##
 
     for page_index in range(set_pages):
+        dmtg.display_status('page', page_index, set_pages)
+
         fetch_page_params = dict(fetch_base_params, **{'page': page_index})
         page_result = requests.get(fetch_url, params=fetch_page_params)
         page_htmltree = lxml.html.fromstring(page_result.content)
@@ -110,4 +116,5 @@ def fetch_set(set_name):
             set_card_dict['colors'] = ','.join(set_card_dict['colors'])
             set_tsvfile.writerow(set_card_dict)
 
+    print('fetched remote card data for set %s.' % set_name)
     return set_cards

@@ -1,6 +1,6 @@
 __doc__ = '''Module for DMTG (Draft Magic the Gathering) Globals'''
 
-import os
+import os, sys
 
 ### Module Constants ###
 
@@ -19,3 +19,9 @@ def make_set_dirs(set_name):
             os.makedirs(set_dir)
 
     return set_indir, set_outdir
+
+def display_status(set_name, set_idx, set_num):
+    sys.stdout.write('\r')
+    sys.stdout.write('  fetching %s %d/%d...' % (set_name, set_idx+1, set_num))
+    if set_idx + 1 >= set_num: sys.stdout.write('\n')
+    sys.stdout.flush()
