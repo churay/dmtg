@@ -7,6 +7,7 @@ import requests
 
 from PIL import Image
 from StringIO import StringIO
+from collections import defaultdict
 
 ### Module Functions ###
 
@@ -81,7 +82,13 @@ def export_set_datafiles(set_name, set_cards):
     with file(cardfile_path, 'r') as cardfile:
         cardfile_template = string.Template(cardfile.read())
 
+    groupfile_path = os.path.join(dmtg.tmpl_dir, 'tts-groupfile.lua')
+    with file(groupfile_path, 'r') as groupfile:
+        groupfile_template = string.Template(groupfile.read())
+
     # Export the Data Strings for Each Card #
+
+    set_card_colors, set_card_rarities = defaultdict(list), defaultdict(list)
 
     set_card_strs = []
     for set_card in set_cards:
@@ -95,6 +102,24 @@ def export_set_datafiles(set_name, set_cards):
         )
 
         set_card_strs.append(set_card_str)
+        set_card_rarities[set_card['rarity']].append(set_card['id'])
+        for card_color in set_card['colors']:
+            set_card_colors[card_color].append(set_card['id'])
+
+    
+    set_color_strs = []
+    for set_color in dmtg.card_colors:
+        set_color_strs.append(groupfile_template.substitute(
+            group_name=set_color,
+            group_ids=', '.join(cid for cid in set_card_colors[set_color]),
+        ))
+
+    set_rarity_strs = []
+    for set_rarity in dmtg.card_rarities:
+        set_rarity_strs.append(groupfile_template.substitute(
+            group_name=set_rarity,
+            group_ids=', '.join(cid for cid in set_card_rarities[set_rarity]),
+        ))
 
     # Export the Data Files for the Set #
 
@@ -105,6 +130,8 @@ def export_set_datafiles(set_name, set_cards):
         datafile.write(datafile_template.substitute(
             set_name=set_name.lower(),
             set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
+            set_colors=',\n  '.join(scs.replace('\n', '') for scs in set_color_strs),
+            set_rarities=',\n  '.join(srs.replace('\n', '') for srs in set_rarity_strs),
         ))
 
     print('exported data file for set %s.' % set_name)

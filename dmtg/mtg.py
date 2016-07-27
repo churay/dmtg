@@ -5,10 +5,6 @@ import re, math, copy
 import os, sys, csv
 import lxml, lxml.html, requests
 
-### Module Constants ###
-
-mana_colors = ['green', 'blue', 'red', 'white', 'black']
-
 ### Module Functions ###
 
 def fetch_set(set_name):
@@ -20,7 +16,7 @@ def fetch_set(set_name):
     fetch_base_params = {'output': 'compact', 'action': 'advanced',
         'special': 'true', 'set': '+["%s"]' % set_name.upper()}
 
-    any_mana_regex = r'(%s)' % '|'.join(mana_colors)
+    any_mana_regex = r'(%s)' % '|'.join(dmtg.card_colors)
     one_mana_regex = r'^%s$' % any_mana_regex
     multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
 
@@ -89,7 +85,7 @@ def fetch_set(set_name):
                 rarity_set = rarity_elem[0].get('alt')
                 if rarity_set.lower() == set_name.lower():
                     card_rarity = re.search(r'^.*rarity=([a-zA-Z]).*$',
-                        rarity_elem[0].get('src')).group(1)
+                        rarity_elem[0].get('src')).group(1).lower()
                     break
 
             card_href = card_elem[0][0].get('href')
@@ -97,7 +93,7 @@ def fetch_set(set_name):
             card_url = '%s%s' % (cards_url, card_mid)
 
             set_cards.append({
-                'id': fetch_cpp * page_index + card_index,
+                'id': str(fetch_cpp * page_index + card_index),
                 'name': card_name,
                 'colors': list(card_colors),
                 'cost': card_cost,
