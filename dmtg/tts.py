@@ -41,7 +41,7 @@ def export_set_deckfiles(set_name, set_cards):
     for deckfile_idx in range(deckfile_count):
         dmtg.display_status('deck file', deckfile_idx, deckfile_count)
         deckfile_cards = deckfile_cpf if deckfile_idx != deckfile_count - 1 \
-            else deckfile_count % deckfile_cpf
+            else len(set_cards) % deckfile_cpf
 
         deckfile_name = 'magic-%s-%d-%d.png' % (set_name.lower(), deckfile_idx, deckfile_cards)
         deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
@@ -88,6 +88,7 @@ def export_set_datafiles(set_name, set_cards):
         set_card_str = cardfile_template.substitute(
             card_id=set_card['id'],
             card_name='"%s"' % set_card['name'],
+            card_type='"%s"' % set_card['type'],
             card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
             card_cost=set_card['cost'],
             card_rarity='"%s"' % set_card['rarity'],
