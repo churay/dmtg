@@ -30,9 +30,11 @@ function draftcards()
   for cardidx = 1, deckcopy.getQuantity() do
     local cardobj = deckcopy.takeObject({
       position={draftdeckpos.x, draftdeckpos.y+0.25*cardidx, draftdeckpos.z},
+      --[[
       callback='lockcard',
       callback_owner=self,
       params={},
+      --]]
       top=true
     })
     cardobj.lock()
@@ -64,6 +66,18 @@ function draftcards()
       })
       cardclone.unlock()
     end
+  end
+
+  -- TODO(JRC): Remove this debugging code.
+  ---[[
+  for cardidx, cardcount in pairs(cardsgenerated) do
+    print(cardidx .. ':' .. cardcount)
+  end
+  --]]
+
+  for cardidx = #deckcards, 1, -1 do
+    local cardobj = deckcards[cardidx]
+    cardobj.destruct()
   end
 end
 
