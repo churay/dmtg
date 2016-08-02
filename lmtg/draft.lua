@@ -38,6 +38,33 @@ function draftcards()
     cardobj.lock()
     table.insert(deckcards, cardobj)
   end
+
+  local boostercardcount, boostercolcount = 15, 3
+  local boostercount = 3 -- 3 * #getSeatedPlayers()
+  local cardsgenerated = {}
+  for boosteridx = 1, boostercount do
+    local boosterrow = math.floor((boosteridx-1) / boostercolcount)
+    local boostercol = (boosteridx-1) % boostercolcount
+    local boosterpos = {
+      x=draftareapos.x+boostercol*deckdims.w,
+      y=draftareapos.y,
+      z=draftareapos.z-boosterrow*deckdims.d
+    }
+
+    for boostercardidx = 1, boostercardcount do
+      -- TODO(JRC): Modify this code so that the booster generation process
+      -- follows MTG booster generation rules.
+      local cardidx = math.random(#deckcards)
+      if cardsgenerated[cardidx] == nil then cardsgenerated[cardidx] = 1
+      else cardsgenerated[cardidx] = cardsgenerated[cardidx] + 1 end
+      local cardobj = deckcards[cardidx]
+      local cardclone = cardobj.clone({
+        position={boosterpos.x, boosterpos.y+0.25*boostercardidx, boosterpos.z},
+        snap_to_grid=false
+      })
+      cardclone.unlock()
+    end
+  end
 end
 
 function lockcard(cardobj, params)
