@@ -1,52 +1,45 @@
-local mtgset = require('magic-cns.lua')
-
--- generate 10 commons, 3 uncommons, 1 rare (1/8 mythic rare)
--- generate all unique cards
--- place in at least one card of each color
--- place at least one land card in each (or 'draft-matters' if conspiracy)
-
--- random sort all, pop off and satisfy constraints ; need to not add if
--- there are x remaining limiting factors
-
-function postostr(pos)
-  return '(' .. pos[1] .. ', ' .. pos[2] .. ', ' .. pos[3] .. ')'
+function onload()
+  self.createButton({
+    click_function = 'draftcards',
+    function_owner = self,
+    label = 'Draft Cards',
+    position = {0.0, 0.0, 0.0},
+    rotation = {180.0, 0.0, 0.0},
+    width = 450,
+    height = 200,
+    font_size = 80
+  })
 end
 
 function draftcards()
-  print('drafting cards...')
-  local deckid = '61e522'
+  -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
+  -- it can be retrieved in this function automatically.
+  local deckid = '07a2fc'
   local deckobj = getObjectFromGUID(deckid)
+  local deckdims = {w=2.5, h=1/4, d=3.5}
+  
+  local deckpos = deckobj.getPosition()
+  local deckcopypos = {x=deckpos.x-deckdims.w, y=1, z=deckpos.z}
+  local draftdeckpos = {x=deckcopypos.x-deckdims.w, y=1, z=deckcopypos.z}
+  local draftareapos = {x=draftdeckpos.x, y=1, z=draftdeckpos.z-deckdims.d}
 
-  deckobj.takeObject()
-  deckobj.takeObject({index=10})
-
-  --local deckcards = deckobj.getObjects()
-  --print(deckobj.getQuantity())
-
-  -- NOTE(JRC): The deck cards all have GUIDs, but these objects don't
-  -- officially exist in TTS until they're removed from the deck.
-  --[[
-  local firstcard = getObjectFromGUID('238ccc') -- getObjectFromGUID(deckcards[1].guid)
-  local firstcardpos = firstcard.getPosition()
-  local newcardpos = {firstcardpos.x+1.0, firstcardpos.y, firstcardpos.z+1.0} 
-  copy({firstcard})
-  local newobjs = paste({position=newcardpos, snap_to_grid=true})
-
-  for k, v in ipairs(getAllObjects()) do
-    print('  ' .. v.guid)
+  -- TODO(JRC): Automatically determine the size of the deck and adjust
+  -- the location of the drafting area accordingly.
+  local deckcopy = deckobj.clone({deckcopypos.x, deckcopypos.y, deckcopypos.z})
+  local deckcards= {}
+  for cardidx = 1, deckcopy.getQuantity() do
+    local cardobj = deckcopy.takeObject({
+      position={draftdeckpos.x, draftdeckpos.y+0.25*cardidx, draftdeckpos.z},
+      callback='lockcard',
+      callback_owner=self,
+      params={},
+      top=true
+    })
+    cardobj.lock()
+    table.insert(deckcards, cardobj)
   end
-  ]]--
 end
 
-function onload()
-  self.createButton({
-    click_function='draftcards',
-    function_owner= self,
-    label='Draft Cards',
-    position = {0.0, 0.5, 0.0},
-    rotation = {0.0, 0.0, 0.0},
-    width=450,
-    height=200,
-    font_size=80
-  })
+function lockcard(cardobj, params)
+  cardobj.lock()
 end
