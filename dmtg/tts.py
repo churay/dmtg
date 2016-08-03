@@ -106,19 +106,18 @@ def export_set_datafiles(set_name, set_cards):
         for card_color in set_card['colors']:
             set_card_colors[card_color].append(set_card['id'])
 
-    
     set_color_strs = []
     for set_color in dmtg.card_colors:
         set_color_strs.append(groupfile_template.substitute(
             group_name=set_color,
-            group_ids=', '.join(cid for cid in set_card_colors[set_color]),
+            group_ids=', '.join('[%s]=1' % cid for cid in set_card_colors[set_color]),
         ))
 
     set_rarity_strs = []
     for set_rarity in dmtg.card_rarities:
         set_rarity_strs.append(groupfile_template.substitute(
             group_name=set_rarity,
-            group_ids=', '.join(cid for cid in set_card_rarities[set_rarity]),
+            group_ids=', '.join('[%s]=1' % cid for cid in set_card_rarities[set_rarity]),
         ))
 
     # Export the Data Files for the Set #
