@@ -9,9 +9,6 @@ import lxml, lxml.html, requests
 
 def fetch_set(set_name):
     fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
-    cards_url = 'http://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid='
-    set_indir, set_outdir = dmtg.make_set_dirs(set_name)
-
     fetch_cpp = 100
     fetch_base_params = {'output': 'compact', 'action': 'advanced',
         'special': 'true', 'set': '+["%s"]' % set_name.upper()}
@@ -25,6 +22,7 @@ def fetch_set(set_name):
 
     ## Determine Existence of Local Set Data ##
 
+    set_indir, set_outdir = dmtg.make_set_dirs(set_name)
     set_path = os.path.join(set_indir, '%s.tsv' % set_name.lower())
     if os.path.isfile(set_path):
         with open(set_path, 'r') as set_file:
@@ -90,7 +88,9 @@ def fetch_set(set_name):
 
             card_href = card_elem[0][0].get('href')
             card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
-            card_url = '%s%s' % (cards_url, card_mid)
+            card_url = fetch_card_url(set_name, card_name, card_mid)
+
+            # TODO(JRC): Attempt to query the magiccards.info site
 
             set_cards.append({
                 'id': str(fetch_cpp * page_index + card_index),
@@ -114,3 +114,27 @@ def fetch_set(set_name):
 
     print('fetched remote card data for set %s.' % set_name)
     return set_cards
+
+def fetch_card_url(set_name, card_name, card_mid):
+    mtgcards_url = 'http://magiccards.info/query'
+    mtgwotc_url = 'http://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid='
+
+    ## Attempt to Retrieve High-Res URL ##
+
+    mtgcards_params = {'s': 'cname', 'v': 'card', 'q': card_name}
+    mtgcards_result = requests.get(mtgcards_url, mtgcards_params)
+    mtgcards_htmltree = lxml.html.fromstring(mtgcards_result.content)
+
+    if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':
+        card_elem = mtgcards_htmltree[1][6]
+        while len(card_elem) > 0:
+            card_elem = next(
+                (se for se in card_elem.iter() if se.tag == 'img'),
+                card_elem[0]
+            )
+            if card_elem.tag == 'img':
+                return card_elem.get('src')
+
+    ## Retrieve Low-Res Dependable URL ##
+
+    return '%s%s' % (mtgwotc_url, card_mid)
