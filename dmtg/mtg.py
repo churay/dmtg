@@ -51,13 +51,14 @@ def fetch_set(set_name):
     ## Query Each Page for Cards in Set  ##
 
     for page_index in range(set_pages):
-        dmtg.display_status('page card', fetch_cpp * page_index, set_length)
+        page_card_index = fetch_cpp * page_index
+        dmtg.display_status('page card', page_card_index, set_length)
         fetch_page_params = dict(fetch_base_params, **{'page': page_index})
         page_result = requests.get(fetch_url, params=fetch_page_params)
         page_htmltree = lxml.html.fromstring(page_result.content)
 
         for card_index, card_elem in enumerate(page_htmltree.find_class('cardItem')):
-            dmtg.display_status('page card', card_index, set_length)
+            dmtg.display_status('page card', page_card_index + card_index, set_length)
             card_name_raw = card_elem[0][0].text_content()
             card_name = unicode(card_name_raw).encode('utf-8').strip()
 
