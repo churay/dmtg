@@ -17,7 +17,7 @@ function draftcards()
   local deckid = '07a2fc'
   local deckobj = getObjectFromGUID(deckid)
   local deckdims = {w=2.5, h=1/4, d=3.5}
-  
+
   local deckpos = deckobj.getPosition()
   local deckcopypos = {x=deckpos.x-deckdims.w, y=1, z=deckpos.z}
   local draftdeckpos = {x=deckcopypos.x-deckdims.w, y=1, z=deckcopypos.z}
@@ -30,11 +30,6 @@ function draftcards()
   for cardidx = 1, deckcopy.getQuantity() do
     local cardobj = deckcopy.takeObject({
       position={draftdeckpos.x, draftdeckpos.y+0.25*cardidx, draftdeckpos.z},
-      --[[
-      callback='lockcard',
-      callback_owner=self,
-      params={},
-      --]]
       top=true
     })
     cardobj.lock()
@@ -81,6 +76,32 @@ function draftcards()
   end
 end
 
-function lockcard(cardobj, params)
-  cardobj.lock()
+function range(min, max, step)
+  if max == nil and step == nil then min, max = max, min end
+  local min = min or 1
+  local max = max or 1
+  local step = step or 1
+
+  local rangelist, rangeiter = {}, min
+  while rangeiter <= max do
+    table.insert(rangelist, rangeiter)
+    rangeiter = rangeiter + step
+  end
+  return rangelist
+end
+
+function randomshuffle(list)
+  local slist = {}
+
+  for _, val in ipairs(list) do
+    table.insert(slist, val)
+  end
+
+  for validx = 1, #list do
+    local lastidx = #list-vidx+1
+    local randidx = math.random(lastidx)
+    slist[randidx], slist[lastidx] = slist[lastidx], slist[randidx]
+  end
+
+  return slist
 end
