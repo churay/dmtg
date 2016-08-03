@@ -14,7 +14,7 @@ from collections import defaultdict
 def export_set_deckfiles(set_name, set_cards):
     deckfile_cpf, deckfile_cpd = 69, (10, 7)
     deckfile_count = int(math.ceil(len(set_cards) / float(deckfile_cpf)))
-    set_card_dims = ( float('inf'), float('inf') )
+    set_card_dims = ( float('-inf'), float('inf') )
 
     print('exporting deck file for set %s...' % set_name)
     deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_name)

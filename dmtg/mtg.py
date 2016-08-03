@@ -51,13 +51,13 @@ def fetch_set(set_name):
     ## Query Each Page for Cards in Set  ##
 
     for page_index in range(set_pages):
-        dmtg.display_status('page', page_index, set_pages)
-
+        dmtg.display_status('page card', fetch_cpp * page_index, set_length)
         fetch_page_params = dict(fetch_base_params, **{'page': page_index})
         page_result = requests.get(fetch_url, params=fetch_page_params)
         page_htmltree = lxml.html.fromstring(page_result.content)
 
         for card_index, card_elem in enumerate(page_htmltree.find_class('cardItem')):
+            dmtg.display_status('page card', card_index, set_length)
             card_name_raw = card_elem[0][0].text_content()
             card_name = unicode(card_name_raw).encode('utf-8').strip()
 
@@ -89,8 +89,6 @@ def fetch_set(set_name):
             card_href = card_elem[0][0].get('href')
             card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
             card_url = fetch_card_url(set_name, card_name, card_mid)
-
-            # TODO(JRC): Attempt to query the magiccards.info site
 
             set_cards.append({
                 'id': str(fetch_cpp * page_index + card_index),
