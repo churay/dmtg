@@ -32,7 +32,7 @@ def export_set_deckfiles(set_name, set_cards):
         else:
             set_card_image = Image.open(set_card_path)
 
-        set_card_dims = sorted([set_card_dims, set_card_image.size])[0]
+        set_card_dims = sorted([set_card_dims, set_card_image.size])[-1]
         del set_card_image
 
     ## Export the Deck Files for the Set ##
