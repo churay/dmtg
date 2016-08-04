@@ -1,6 +1,6 @@
 __doc__ = '''Module for Tabletop Simulator Processing/Exporting Functions'''
 
-import dmtg
+import dmtg, mtg
 import re, math, string
 import os, io
 import requests
@@ -26,7 +26,8 @@ def export_set_deckfiles(set_name, set_cards):
         set_card_path = os.path.join(deckfile_indir, '%d.jpeg' % set_card_idx)
 
         if not os.path.isfile(set_card_path):
-            set_card_request = requests.get(set_card['url'])
+            set_card_url = mtg.fetch_card_url(set_name, set_card['name'], set_card['mid'])
+            set_card_request = requests.get(set_card_url)
             set_card_image = Image.open(StringIO(set_card_request.content))
             set_card_image.save(set_card_path)
         else:
