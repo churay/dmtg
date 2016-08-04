@@ -78,6 +78,9 @@ function draftcards()
 end
 
 function draftbooster(mtgset)
+  -- TODO(JRC): Determine whether or not to include a card as a particular
+  -- color if it has more than one color (i.e. should red/black count as
+  -- both a red and black card for minimum requirements).
   function iscolor(color)
     return function(card)
       for _, cardcolor in ipairs(card.colors) do
@@ -87,18 +90,25 @@ function draftbooster(mtgset)
     end
   end
 
-  function israrity(rarity)
-    return function(card) return card.rarity == rarity end
+  function island(card)
+    return string.match(string.lower(card.type), '^.* ?land$')
   end
 
-  function island(card)
-    return string.match(string.lower(card.type), '^(.* ?)?land$')
+  -- TODO(JRC): Fix this so that land card requirements are treated
+  -- separately from all of the other requirements (take the max
+  -- requirement that applies first instead of all?).
+  function israrity(rarity)
+    return function(card) return not island(card) and card.rarity == rarity end
   end
+
+  local randomcards = randomshuffle(range(#mtgset.cards))
+  local israrebooster = math.random(8) ~= 1
 
   local boostermaxreqs = {
     [israrity('c')]=10,
     [israrity('u')]=3,
-    [israrity(math.random(8) == 1 and 'm' or 'r')]=1,
+    [israrity(israrebooster and 'r' or 'm')]=1,
+    [israrity(israrebooster and 'm' or 'r')]=0,
     [island]=1
   }
   local boosterminreqs = {
@@ -109,18 +119,42 @@ function draftbooster(mtgset)
     [iscolor('black')]=2
   }
 
-  -- if booster max has been met, then we must move on
-  -- (any boostermaxreqs function returns true and has value 0)
-  --
-  -- if the cumulative booster mins haven't been met and
-  -- the current card doesn't meet at least one such requirement,
-  -- then we must move on
-
-  local shuffledcards = randomshuffle(range(#mtgset.cards))
-
-  local boostercards = {}
+  local boostercards, randomcardidxidx = {}, 1
   while #boostercards < 15 do
-    table.insert(boostercards, shuffledcards[#boostercards+1])
+    local randomcardidx = randomcards[randomcardidxidx]
+    local randomcard = mtgset.cards[randomcardidx]
+    local cardmaxfxns, cardminfxns = {}, {}
+
+    local iscardmaxed = false
+    for maxreqfxn, maxreqremaining in pairs(boostermaxreqs) do
+      if maxreqfxn(randomcard) then
+        table.insert(cardmaxfxns, maxreqfxn)
+        if maxreqremaining == 0 then iscardmaxed = true end
+      end
+    end
+
+    local iscardmin, minrequiredcount = false, 0
+    for minreqfxn, minreqrequired  in ipairs(boosterminreqs) do
+      if minreqfxn(randomcard) then
+        table.insert(cardminfxns, minreqfxn)
+        if minreqrequired ~= 0 then iscardmin = true end
+      end
+      minrequiredcount = minrequiredcount+minreqrequired
+    end
+    local isminrequired = 15-#boostercards <= minrequiredcount
+
+    if not iscardmaxed and (not isminrequired or iscardmin) then
+      for _, cardmaxfxn in ipairs(cardmaxfxns) do
+        boostermaxreqs[cardmaxfxn] = boostermaxreqs[cardmaxfxn]-1
+      end
+      for _, cardminfxn in ipairs(cardminfxns) do
+        boosterminreqs[cardminfxn] = boosterminreqs[cardminfxn]-1
+      end
+
+      table.insert(boostercards, randomcardidx)
+    end
+
+    randomcardidxidx = randomcardidxidx + 1
   end
 
   return boostercards
@@ -160,3 +194,22 @@ function randomize()
   math.randomseed( os.time() )
   for _ = 1, 3 do math.random() end
 end
+
+-- TODO(JRC): Remove the following debugging code after more testing
+-- is completed.
+--[[
+function testdraft()
+  t = draftbooster(mtgsets.cns)
+  for _, v in ipairs(t) do
+    print(v .. ':')
+    for ck, cv in pairs(mtgsets.cns.cards[v]) do
+      local cvstr = type(cv) == 'table' and '[ ' or tostring(cv)
+      if type(cv) == 'table' then
+        for _, cc in ipairs(cv) do cvstr = cvstr .. cc .. ', ' end
+        cvstr = cvstr .. ']'
+      end
+      print('    ' .. ck .. ': ' .. cvstr)
+    end
+  end
+end
+--]]
