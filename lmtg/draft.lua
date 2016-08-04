@@ -1,3 +1,9 @@
+local mtgsets = {}
+
+-- TODO: Insert the contents of the data files for the relevant drafting sets
+-- here to populate the 'mtgsets' table.
+-- dofile('../out/cns-out/magic-cns.lua')
+
 function onload()
   self.createButton({
     click_function = 'draftcards',
@@ -11,10 +17,13 @@ function onload()
   })
 end
 
+-- TODO(JRC): Extend this logic so that multiple sets in a sequence can
+-- be drafted.
 function draftcards()
   -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
   -- it can be retrieved in this function automatically.
   local deckid = '07a2fc'
+  local deckset = mtgsets.cns
   local deckobj = getObjectFromGUID(deckid)
   local deckdims = {w=2.5, h=1/4, d=3.5}
 
@@ -22,6 +31,8 @@ function draftcards()
   local deckcopypos = {x=deckpos.x-deckdims.w, y=1, z=deckpos.z}
   local draftdeckpos = {x=deckcopypos.x-deckdims.w, y=1, z=deckcopypos.z}
   local draftareapos = {x=draftdeckpos.x, y=1, z=draftdeckpos.z-deckdims.d}
+
+  randomize()
 
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
@@ -36,8 +47,9 @@ function draftcards()
     table.insert(deckcards, cardobj)
   end
 
-  local boostercardcount, boostercolcount = 15, 3
   local boostercount = 3 -- 3 * #getSeatedPlayers()
+  local boostercolcount = 3
+
   local cardsgenerated = {}
   for boosteridx = 1, boostercount do
     local boosterrow = math.floor((boosteridx-1) / boostercolcount)
@@ -48,13 +60,9 @@ function draftcards()
       z=draftareapos.z-boosterrow*deckdims.d
     }
 
-    for boostercardidx = 1, boostercardcount do
-      -- TODO(JRC): Modify this code so that the booster generation process
-      -- follows MTG booster generation rules.
-      local cardidx = math.random(#deckcards)
-      if cardsgenerated[cardidx] == nil then cardsgenerated[cardidx] = 1
-      else cardsgenerated[cardidx] = cardsgenerated[cardidx] + 1 end
-      local cardobj = deckcards[cardidx]
+    local boostercardids = draftbooster(deckset)
+    for boostercardidx, boostercardid in ipairs(boostercardids) do
+      local cardobj = deckcards[boostercardid]
       local cardclone = cardobj.clone({
         position={boosterpos.x, boosterpos.y+0.25*boostercardidx, boosterpos.z},
         snap_to_grid=false
@@ -63,31 +71,22 @@ function draftcards()
     end
   end
 
-  -- TODO(JRC): Remove this debugging code.
-  ---[[
-  for cardidx, cardcount in pairs(cardsgenerated) do
-    print(cardidx .. ':' .. cardcount)
-  end
-  --]]
-
   for cardidx = #deckcards, 1, -1 do
     local cardobj = deckcards[cardidx]
     cardobj.destruct()
   end
 end
 
-function range(min, max, step)
-  if max == nil and step == nil then min, max = max, min end
-  local min = min or 1
-  local max = max or 1
-  local step = step or 1
+function draftbooster(mtgset)
+  local setcards = mtgset.cards
+  local shuffledcards = randomshuffle(range(#setcards))
 
-  local rangelist, rangeiter = {}, min
-  while rangeiter <= max do
-    table.insert(rangelist, rangeiter)
-    rangeiter = rangeiter + step
+  local boostercards = {}
+  while #boostercards < 15 do
+    table.insert(boostercards, shuffledcards[#boostercards+1])
   end
-  return rangelist
+
+  return boostercards
 end
 
 function randomshuffle(list)
@@ -104,4 +103,23 @@ function randomshuffle(list)
   end
 
   return slist
+end
+
+function range(min, max, step)
+  if max == nil and step == nil then min, max = max, min end
+  local min = min or 1
+  local max = max or 1
+  local step = step or 1
+
+  local rangelist, rangeiter = {}, min
+  while rangeiter <= max do
+    table.insert(rangelist, rangeiter)
+    rangeiter = rangeiter + step
+  end
+  return rangelist
+end
+
+function randomize()
+  math.randomseed( os.time() )
+  for _ = 1, 3, do math.random() end
 end

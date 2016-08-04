@@ -1,15 +1,13 @@
-local ${set_name} = {}
+mtgsets.${set_name} = {}
 
-${set_name}.cards = {
+mtgsets.${set_name}.cards = {
   ${set_cards}
 }
 
-${set_name}.colors = {
+mtgsets.${set_name}.colors = {
   ${set_colors}
 }
 
-${set_name}.rarities = {
+mtgsets.${set_name}.rarities = {
   ${set_rarities}
 }
-
-return ${set_name}

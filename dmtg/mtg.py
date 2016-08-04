@@ -89,7 +89,7 @@ def fetch_set(set_name):
             card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
 
             set_cards.append({
-                'id': str(fetch_cpp * page_index + card_index),
+                'id': str(fetch_cpp * page_index + card_index + 1),
                 'mid': card_mid,
                 'name': card_name,
                 'colors': list(card_colors),
@@ -117,8 +117,8 @@ def fetch_card_url(set_name, card_name, card_mid):
 
     ## Attempt to Retrieve High-Res URL ##
 
-    mtgcards_params = {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_name)}
-    mtgcards_result = requests.get(mtgcards_url, mtgcards_params)
+    mtgcards_result = requests.get(mtgcards_url,
+        {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_name)})
     mtgcards_htmltree = lxml.html.fromstring(mtgcards_result.content)
 
     if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':
