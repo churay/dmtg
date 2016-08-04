@@ -1,8 +1,8 @@
-local mtgsets = {}
+mtgsets = {}
 
 -- TODO: Insert the contents of the data files for the relevant drafting sets
 -- here to populate the 'mtgsets' table.
--- dofile('../out/cns-out/magic-cns.lua')
+loadfile('../out/cns-out/magic-cns.lua', 'bt', {mtgsets=mtgsets})()
 
 function onload()
   self.createButton({
@@ -78,8 +78,45 @@ function draftcards()
 end
 
 function draftbooster(mtgset)
-  local setcards = mtgset.cards
-  local shuffledcards = randomshuffle(range(#setcards))
+  function iscolor(color)
+    return function(card)
+      for _, cardcolor in ipairs(card.colors) do
+        if cardcolor == color then return true end
+      end
+      return false
+    end
+  end
+
+  function israrity(rarity)
+    return function(card) return card.rarity == rarity end
+  end
+
+  function island(card)
+    return string.match(string.lower(card.type), '^(.* ?)?land$')
+  end
+
+  local boostermaxreqs = {
+    [israrity('c')]=10,
+    [israrity('u')]=3,
+    [israrity(math.random(8) == 1 and 'm' or 'r')]=1,
+    [island]=1
+  }
+  local boosterminreqs = {
+    [iscolor('green')]=2,
+    [iscolor('red')]=2,
+    [iscolor('blue')]=2,
+    [iscolor('white')]=2,
+    [iscolor('black')]=2
+  }
+
+  -- if booster max has been met, then we must move on
+  -- (any boostermaxreqs function returns true and has value 0)
+  --
+  -- if the cumulative booster mins haven't been met and
+  -- the current card doesn't meet at least one such requirement,
+  -- then we must move on
+
+  local shuffledcards = randomshuffle(range(#mtgset.cards))
 
   local boostercards = {}
   while #boostercards < 15 do
@@ -97,7 +134,7 @@ function randomshuffle(list)
   end
 
   for validx = 1, #list do
-    local lastidx = #list-vidx+1
+    local lastidx = #list-validx+1
     local randidx = math.random(lastidx)
     slist[randidx], slist[lastidx] = slist[lastidx], slist[randidx]
   end
@@ -121,5 +158,5 @@ end
 
 function randomize()
   math.randomseed( os.time() )
-  for _ = 1, 3, do math.random() end
+  for _ = 1, 3 do math.random() end
 end
