@@ -2,7 +2,7 @@ mtgsets = {}
 
 -- TODO: Insert the contents of the data files for the relevant drafting sets
 -- here to populate the 'mtgsets' table.
-loadfile('../out/cns-out/magic-cns.lua', 'bt', {mtgsets=mtgsets})()
+-- loadfile('../out/ema-out/magic-ema.lua', 'bt', {mtgsets=mtgsets})()
 
 function onload()
   self.createButton({
@@ -199,10 +199,11 @@ end
 -- is completed.
 --[[
 function testdraft()
-  t = draftbooster(mtgsets.cns)
+  local _, draftset = next(mtgsets, nil)
+  local t = draftbooster(draftset)
   for _, v in ipairs(t) do
     print(v .. ':')
-    for ck, cv in pairs(mtgsets.cns.cards[v]) do
+    for ck, cv in pairs(draftset.cards[v]) do
       local cvstr = type(cv) == 'table' and '[ ' or tostring(cv)
       if type(cv) == 'table' then
         for _, cc in ipairs(cv) do cvstr = cvstr .. cc .. ', ' end
