@@ -10,7 +10,7 @@ import lxml, lxml.html, requests
 def fetch_set(set_name):
     fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
     fetch_cpp = 100
-    fetch_base_params = {'output': 'compact', 'action': 'advanced',
+    fetch_base_params = {'output': 'standard', 'action': 'advanced',
         'special': 'true', 'set': '+["%s"]' % set_name.upper()}
 
     any_mana_regex = r'(%s)' % '|'.join(dmtg.card_colors)
@@ -57,10 +57,23 @@ def fetch_set(set_name):
         page_htmltree = lxml.html.fromstring(page_result.content)
 
         for card_index, card_elem in enumerate(page_htmltree.find_class('cardItem')):
-            card_name_raw = card_elem[0][0].text_content()
-            card_name = unicode(card_name_raw).encode('utf-8').strip()
+            card_info_elem = card_elem.find_class('middleCol')[0]
 
-            card_cost_elem = card_elem[1]
+            card_name_elem = card_info_elem.find_class('cardTitle')[0]
+            card_name = unicode(card_name_elem[0].text_content()).encode('utf-8').strip()
+
+            card_href = card_name_elem[0].get('href')
+            card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
+
+            card_type_elem = card_info_elem.find_class('typeLine')[0]
+            card_type = unicode(card_type_elem.text_content()).encode('utf-8').strip()
+            if card_type.find('\r\n') != -1:
+                card_type = card_type[:card_type.index('\r\n')]
+
+            card_rules_elem = card_info_elem.find_class('rulesText')[0]
+            card_rules = unicode(card_rules_elem.text_content()).encode('utf-8').strip()
+
+            card_cost_elem = card_info_elem.find_class('manaCost')[0]
             card_colors, card_cost = set(), 0
             for mana_elem in card_cost_elem:
                 mana_type = mana_elem.get('alt').lower()
@@ -73,28 +86,23 @@ def fetch_set(set_name):
                     card_colors.update(mana_type.split(' or '))
                     card_cost += 1
 
-            card_type_raw = card_elem[2].text_content()
-            card_type = unicode(card_type_raw).encode('utf-8').strip()
-
-            card_rarity_elem = card_elem[5][0]
-            card_rarity = ''
-            for rarity_elem in card_rarity_elem:
-                rarity_set = rarity_elem[0].get('alt')
-                if rarity_set.lower() == set_name.lower():
-                    card_rarity = re.search(r'^.*rarity=([a-zA-Z]).*$',
-                        rarity_elem[0].get('src')).group(1).lower()
+            card_rarity_elem = card_elem.find_class('rightCol')[0]
+            card_rarity = 'x'
+            for rarity_elem in card_rarity_elem.xpath('.//img'):
+                rarity_id = rarity_elem.get('src').lower()
+                rarity_set = re.search(r'^.*set=([a-z][a-z][a-z]).*$', rarity_id).group(1)
+                if rarity_set == set_name:
+                    card_rarity = re.search(r'^.*rarity=([a-z]).*$', rarity_id).group(1)
                     break
-
-            card_href = card_elem[0][0].get('href')
-            card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
 
             set_cards.append({
                 'id': str(fetch_cpp * page_index + card_index + 1),
                 'mid': card_mid,
                 'name': card_name,
+                'type': card_type,
+                'rules': card_rules,
                 'colors': list(card_colors),
                 'cost': card_cost,
-                'type': card_type,
                 'rarity': card_rarity,
             })
 

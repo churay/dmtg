@@ -1,1 +1,1 @@
-{id=${card_id}, name=${card_name}, description="", type=${card_type}, colors={${card_colors}}, cost=${card_cost}, rarity=${card_rarity}}
+{id=${card_id}, name=${card_name}, type=${card_type}, rules=${card_rules}, colors={${card_colors}}, cost=${card_cost}, rarity=${card_rarity}}

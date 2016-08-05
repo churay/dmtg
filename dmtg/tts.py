@@ -95,6 +95,7 @@ def export_set_datafiles(set_name, set_cards):
             card_id=set_card['id'],
             card_name='"%s"' % set_card['name'],
             card_type='"%s"' % set_card['type'],
+            card_rules='"%s"' % set_card['rules'].replace('"', '\\"'),
             card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
             card_cost=set_card['cost'],
             card_rarity='"%s"' % set_card['rarity'],
