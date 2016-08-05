@@ -2,7 +2,7 @@ mtgsets = {}
 
 -- TODO: Insert the contents of the data files for the relevant drafting sets
 -- here to populate the 'mtgsets' table.
--- loadfile('../out/ema-out/magic-ema.lua', 'bt', {mtgsets=mtgsets})()
+-- loadfile('../out/cns-out/magic-cns.lua', 'bt', {mtgsets=mtgsets})()
 
 function onload()
   self.createButton({
@@ -78,6 +78,8 @@ function draftcards()
 end
 
 function draftbooster(mtgset)
+  local israrebooster = math.random(8) ~= 1
+
   -- TODO(JRC): Determine whether or not to include a card as a particular
   -- color if it has more than one color (i.e. should red/black count as
   -- both a red and black card for minimum requirements).
@@ -94,16 +96,13 @@ function draftbooster(mtgset)
     return string.match(string.lower(card.type), '^.* ?land$')
   end
 
-  -- TODO(JRC): Fix this so that land card requirements are treated
-  -- separately from all of the other requirements (take the max
-  -- requirement that applies first instead of all?).
   function israrity(rarity)
-    return function(card) return not island(card) and card.rarity == rarity end
+    return function(card) return card.rarity == rarity end
   end
 
-  local randomcards = randomshuffle(range(#mtgset.cards))
-  local israrebooster = math.random(8) ~= 1
-
+  -- NOTE(JRC): In order to allow wildcards to have arbitrary rarities, only
+  -- the first matching max requirement is considered when determining whether
+  -- or not a given card is 'maxed out'.
   local boostermaxreqs = {
     [israrity('c')]=10,
     [israrity('u')]=3,
@@ -119,6 +118,7 @@ function draftbooster(mtgset)
     [iscolor('black')]=2
   }
 
+  local randomcards = randomshuffle(range(#mtgset.cards))
   local boostercards, randomcardidxidx = {}, 1
   while #boostercards < 15 do
     local randomcardidx = randomcards[randomcardidxidx]
@@ -130,11 +130,12 @@ function draftbooster(mtgset)
       if maxreqfxn(randomcard) then
         table.insert(cardmaxfxns, maxreqfxn)
         if maxreqremaining == 0 then iscardmaxed = true end
+        break
       end
     end
 
     local iscardmin, minrequiredcount = false, 0
-    for minreqfxn, minreqrequired  in ipairs(boosterminreqs) do
+    for minreqfxn, minreqrequired  in pairs(boosterminreqs) do
       if minreqfxn(randomcard) then
         table.insert(cardminfxns, minreqfxn)
         if minreqrequired ~= 0 then iscardmin = true end
@@ -145,12 +146,11 @@ function draftbooster(mtgset)
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
       for _, cardmaxfxn in ipairs(cardmaxfxns) do
-        boostermaxreqs[cardmaxfxn] = boostermaxreqs[cardmaxfxn]-1
+        boostermaxreqs[cardmaxfxn] = math.max(boostermaxreqs[cardmaxfxn]-1, 0)
       end
       for _, cardminfxn in ipairs(cardminfxns) do
-        boosterminreqs[cardminfxn] = boosterminreqs[cardminfxn]-1
+        boosterminreqs[cardminfxn] = math.max(boosterminreqs[cardminfxn]-1, 0)
       end
-
       table.insert(boostercards, randomcardidx)
     end
 
@@ -200,17 +200,36 @@ end
 --[[
 function testdraft()
   local _, draftset = next(mtgsets, nil)
-  local t = draftbooster(draftset)
-  for _, v in ipairs(t) do
-    print(v .. ':')
-    for ck, cv in pairs(draftset.cards[v]) do
-      local cvstr = type(cv) == 'table' and '[ ' or tostring(cv)
-      if type(cv) == 'table' then
-        for _, cc in ipairs(cv) do cvstr = cvstr .. cc .. ', ' end
-        cvstr = cvstr .. ']'
+  local draftbooster = draftbooster(draftset)
+
+  local draftcards = {}
+  local draftcolors = {green=0, red=0, blue=0, white=0, black=0, colorless=0}
+  local draftrarities = {c=0, u=0, r=0, m=0}
+
+  for _, boostercardidx in ipairs(draftbooster) do
+    local boostercard = draftset.cards[boostercardidx]
+    table.insert(draftcards, boostercard.name)
+
+    if #boostercard.colors == 0 then
+      draftcolors.colorless = draftcolors.colorless+1
+    else
+      for _, cardcolor in ipairs(boostercard.colors) do
+        draftcolors[cardcolor] = draftcolors[cardcolor]+1
       end
-      print('    ' .. ck .. ': ' .. cvstr)
     end
+
+    draftrarities[boostercard.rarity] = draftrarities[boostercard.rarity]+1
   end
+
+  function tabletostr(t)
+    local st = {}
+    for k, v in pairs(t) do table.insert(st, k .. ': ' .. v) end
+    return '[' .. table.concat(st, ', ') .. ']'
+  end
+
+  print('booster summary:')
+  print('    cards: [' .. table.concat(draftcards, ', ') .. ']')
+  print('    colors: ' .. tabletostr(draftcolors))
+  print('    rarities: ' .. tabletostr(draftrarities))
 end
 --]]
