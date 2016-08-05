@@ -78,8 +78,6 @@ function draftcards()
 end
 
 function draftbooster(mtgset)
-  local israrebooster = math.random(8) ~= 1
-
   -- TODO(JRC): Determine whether or not to include a card as a particular
   -- color if it has more than one color (i.e. should red/black count as
   -- both a red and black card for minimum requirements).
@@ -103,12 +101,13 @@ function draftbooster(mtgset)
   -- NOTE(JRC): In order to allow wildcards to have arbitrary rarities, only
   -- the first matching max requirement is considered when determining whether
   -- or not a given card is 'maxed out'.
+  local israrebooster = math.random(8) ~= 1
   local boostermaxreqs = {
+    [island]=1,
     [israrity('c')]=10,
     [israrity('u')]=3,
     [israrity(israrebooster and 'r' or 'm')]=1,
-    [israrity(israrebooster and 'm' or 'r')]=0,
-    [island]=1
+    [israrity(israrebooster and 'm' or 'r')]=0
   }
   local boosterminreqs = {
     [iscolor('green')]=2,
@@ -119,8 +118,11 @@ function draftbooster(mtgset)
   }
 
   local randomcards = randomshuffle(range(#mtgset.cards))
-  local boostercards, randomcardidxidx = {}, 1
+  local boostercards, randomcardidxidx = {}, 0
   while #boostercards < 15 do
+    repeat
+      randomcardidxidx = (randomcardidxidx%(#randomcards-#boostercards))+1
+    until randomcards[randomcardidxidx] ~= -1
     local randomcardidx = randomcards[randomcardidxidx]
     local randomcard = mtgset.cards[randomcardidx]
     local cardmaxfxns, cardminfxns = {}, {}
@@ -142,7 +144,7 @@ function draftbooster(mtgset)
       end
       minrequiredcount = minrequiredcount+minreqrequired
     end
-    local isminrequired = 15-#boostercards <= minrequiredcount
+    local isminrequired = minrequiredcount > 0
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
       for _, cardmaxfxn in ipairs(cardmaxfxns) do
@@ -151,10 +153,9 @@ function draftbooster(mtgset)
       for _, cardminfxn in ipairs(cardminfxns) do
         boosterminreqs[cardminfxn] = math.max(boosterminreqs[cardminfxn]-1, 0)
       end
+      randomcards[randomcardidxidx] = -1
       table.insert(boostercards, randomcardidx)
     end
-
-    randomcardidxidx = randomcardidxidx + 1
   end
 
   return boostercards
