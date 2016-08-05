@@ -2,7 +2,7 @@ mtgsets = {}
 
 -- TODO: Insert the contents of the data files for the relevant drafting sets
 -- here to populate the 'mtgsets' table.
--- loadfile('../out/cns-out/magic-cns.lua', 'bt', {mtgsets=mtgsets})()
+loadfile('../out/cns-out/magic-cns.lua', 'bt', {mtgsets=mtgsets})()
 
 function onload()
   self.createButton({
@@ -81,7 +81,7 @@ function draftbooster(mtgset)
   -- TODO(JRC): Determine whether or not to include a card as a particular
   -- color if it has more than one color (i.e. should red/black count as
   -- both a red and black card for minimum requirements).
-  function iscolor(color)
+  local function iscolor(color)
     return function(card)
       for _, cardcolor in ipairs(card.colors) do
         if cardcolor == color then return true end
@@ -90,11 +90,11 @@ function draftbooster(mtgset)
     end
   end
 
-  function island(card)
+  local function island(card)
     return string.match(string.lower(card.type), '^.* ?land$')
   end
 
-  function israrity(rarity)
+  local function israrity(rarity)
     return function(card) return card.rarity == rarity end
   end
 
@@ -103,18 +103,18 @@ function draftbooster(mtgset)
   -- or not a given card is 'maxed out'.
   local israrebooster = math.random(8) ~= 1
   local boostermaxreqs = {
-    [island]=1,
-    [israrity('c')]=10,
-    [israrity('u')]=3,
-    [israrity(israrebooster and 'r' or 'm')]=1,
-    [israrity(israrebooster and 'm' or 'r')]=0
+    {island, 1},
+    {israrity('c'), 10},
+    {israrity('u'), 3},
+    {israrity(israrebooster and 'r' or 'm'), 1},
+    {israrity(israrebooster and 'm' or 'r'), 0}
   }
   local boosterminreqs = {
-    [iscolor('green')]=2,
-    [iscolor('red')]=2,
-    [iscolor('blue')]=2,
-    [iscolor('white')]=2,
-    [iscolor('black')]=2
+    {iscolor('green'), 2},
+    {iscolor('red'), 2},
+    {iscolor('blue'), 2},
+    {iscolor('white'), 2},
+    {iscolor('black'), 2}
   }
 
   local randomcards = randomshuffle(range(#mtgset.cards))
@@ -125,21 +125,23 @@ function draftbooster(mtgset)
     until randomcards[randomcardidxidx] ~= -1
     local randomcardidx = randomcards[randomcardidxidx]
     local randomcard = mtgset.cards[randomcardidx]
-    local cardmaxfxns, cardminfxns = {}, {}
+    local cardmaxreqidxs, cardminreqidxs = {}, {}
 
     local iscardmaxed = false
-    for maxreqfxn, maxreqremaining in pairs(boostermaxreqs) do
+    for maxreqidx, maxreqpair in ipairs(boostermaxreqs) do
+      local maxreqfxn, maxreqremaining = maxreqpair[1], maxreqpair[2]
       if maxreqfxn(randomcard) then
-        table.insert(cardmaxfxns, maxreqfxn)
+        table.insert(cardmaxreqidxs, maxreqidx)
         if maxreqremaining == 0 then iscardmaxed = true end
         break
       end
     end
 
     local iscardmin, minrequiredcount = false, 0
-    for minreqfxn, minreqrequired  in pairs(boosterminreqs) do
+    for minreqidx, minreqpair in ipairs(boosterminreqs) do
+      local minreqfxn, minreqrequired = minreqpair[1], minreqpair[2]
       if minreqfxn(randomcard) then
-        table.insert(cardminfxns, minreqfxn)
+        table.insert(cardminreqidxs, minreqidx)
         if minreqrequired ~= 0 then iscardmin = true end
       end
       minrequiredcount = minrequiredcount+minreqrequired
@@ -147,11 +149,11 @@ function draftbooster(mtgset)
     local isminrequired = minrequiredcount > 0
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
-      for _, cardmaxfxn in ipairs(cardmaxfxns) do
-        boostermaxreqs[cardmaxfxn] = math.max(boostermaxreqs[cardmaxfxn]-1, 0)
+      for _, maxreqidx in ipairs(cardmaxreqidxs) do
+        boostermaxreqs[maxreqidx][2] = math.max(boostermaxreqs[maxreqidx][2]-1, 0)
       end
-      for _, cardminfxn in ipairs(cardminfxns) do
-        boosterminreqs[cardminfxn] = math.max(boosterminreqs[cardminfxn]-1, 0)
+      for _, minreqidx in ipairs(cardminreqidxs) do
+        boosterminreqs[minreqidx][2] = math.max(boosterminreqs[minreqidx][2]-1, 0)
       end
       randomcards[randomcardidxidx] = -1
       table.insert(boostercards, randomcardidx)
@@ -198,7 +200,7 @@ end
 
 -- TODO(JRC): Remove the following debugging code after more testing
 -- is completed.
---[[
+---[[
 function testdraft()
   local _, draftset = next(mtgsets, nil)
   local draftbooster = draftbooster(draftset)
