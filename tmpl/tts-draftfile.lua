@@ -10,10 +10,8 @@ local function iscolor(color)
 end
 
 local function island(card)
-  local cardtype = string.lower(card.type)
-  local isbasicland = cardtype == 'land'
-  local isspecialland = string.sub(cardtype, -5) == ' land'
-  return isbasicland or isspecialland
+  -- scale land by rarity.
+  return string.match(string.lower(card.type), '%f[%a]land%f[%A]')
 end
 
 local function israrity(rarity)
@@ -79,19 +77,19 @@ mtgsets.default = {}
 mtgsets.default.cards = {}
 mtgsets.default.draftrules = {
   minreqs = {
-    {island, 1},
     {iscolor('green'), 2},
     {iscolor('red'), 2},
     {iscolor('blue'), 2},
     {iscolor('white'), 2},
-    {iscolor('black'), 2}
+    {iscolor('black'), 2},
+    {island, 1}
   },
   maxreqs = {
-    {island, 1},
-    {israrity('c'), 10},
+    {israrity('c'), 11},
     {israrity('u'), 3},
     {israrity('r'), function(r) return r <= 7/8 and 1 or 0 end},
-    {israrity('m'), function(r) return r > 7/8 and 1 or 0 end}
+    {israrity('m'), function(r) return r > 7/8 and 1 or 0 end},
+    {island, 1}
   }
 }
 
@@ -208,16 +206,15 @@ function draftbooster(mtgset)
     local randomcard = mtgset.cards[randomcardidx]
     local cardmaxreqidxs, cardminreqidxs = {}, {}
 
-    -- NOTE(JRC): In order to allow wildcards to have arbitrary rarities, only
-    -- the first matching max requirement is considered when determining whether
-    -- or not a given card is 'maxed out'.
+    -- NOTE(JRC): In order to prevent wildcards from having arbitrary rarities,
+    -- each matching max requirement is considered when determining whether or
+    -- not a given card is 'maxed out'.
     local iscardmaxed = false
     for maxreqidx, maxreqpair in ipairs(boostermaxreqs) do
       local maxreqfxn, maxreqremaining = maxreqpair[1], maxreqpair[2]
       if maxreqfxn(randomcard) then
         table.insert(cardmaxreqidxs, maxreqidx)
         if maxreqremaining == 0 then iscardmaxed = true end
-        break
       end
     end
 

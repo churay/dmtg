@@ -6,6 +6,7 @@ import os, sys
 
 card_colors = ['green', 'blue', 'red', 'white', 'black']
 card_rarities = ['c', 'u', 'r', 'm']
+card_basic_lands = ['forest', 'island', 'mountain', 'plains', 'swamp']
 
 base_dir = os.path.dirname(os.path.relpath(__file__))
 lua_dir = os.path.join(os.path.dirname(base_dir), 'lmtg')
