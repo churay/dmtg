@@ -7,9 +7,10 @@ import os, sys
 card_colors = ['green', 'blue', 'red', 'white', 'black']
 card_rarities = ['c', 'u', 'r', 'm']
 
-src_dir = os.path.dirname(os.path.relpath(__file__))
-out_dir = os.path.join(os.path.dirname(src_dir), 'out')
-tmpl_dir = os.path.join(os.path.dirname(src_dir), 'tmpl')
+base_dir = os.path.dirname(os.path.relpath(__file__))
+lua_dir = os.path.join(os.path.dirname(base_dir), 'lmtg')
+out_dir = os.path.join(os.path.dirname(base_dir), 'out')
+tmpl_dir = os.path.join(os.path.dirname(base_dir), 'tmpl')
 
 ### Module Functions ###
 
