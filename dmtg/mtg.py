@@ -18,7 +18,8 @@ def fetch_set(set_name):
     multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
 
     print('fetching card data for set %s...' % set_name)
-    set_cards = []
+    set_cards, skipped_cards = [], []
+    set_omissions = set(dmtg.card_basic_lands)
 
     ## Determine Existence of Local Set Data ##
 
@@ -62,6 +63,10 @@ def fetch_set(set_name):
             card_name_elem = card_info_elem.find_class('cardTitle')[0]
             card_name = unicode(card_name_elem[0].text_content()).encode('utf-8').strip()
 
+            if card_name.lower() in set_omissions:
+                skipped_cards.append(card_name.lower())
+                continue
+
             card_href = card_name_elem[0].get('href')
             card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
 
@@ -96,7 +101,7 @@ def fetch_set(set_name):
                     break
 
             set_cards.append({
-                'id': str(fetch_cpp * page_index + card_index + 1),
+                'id': str(fetch_cpp * page_index + card_index + 1 - len(skipped_cards)),
                 'mid': card_mid,
                 'name': card_name,
                 'type': card_type,
