@@ -79,6 +79,7 @@ mtgsets.default = {}
 mtgsets.default.cards = {}
 mtgsets.default.draftrules = {
   minreqs = {
+    {island, 1},
     {iscolor('green'), 2},
     {iscolor('red'), 2},
     {iscolor('blue'), 2},

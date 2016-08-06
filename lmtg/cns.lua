@@ -6,3 +6,6 @@ end
 
 table.remove(mtgsets.cns.draftrules.maxreqs, 1)
 table.insert(mtgsets.cns.draftrules.maxreqs, 1, {isconspiracy, 1})
+
+table.remove(mtgsets.cns.draftrules.minreqs, 1)
+table.insert(mtgsets.cns.draftrules.minreqs, 1, {isconspiracy, 1})
