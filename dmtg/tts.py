@@ -2,7 +2,7 @@ __doc__ = '''Module for Tabletop Simulator Processing/Exporting Functions'''
 
 import dmtg, mtg
 import re, math, string
-import os, io
+import os, io, glob
 import requests
 
 from PIL import Image
@@ -17,7 +17,13 @@ def export_set_deckfiles(set_name, set_cards):
     set_card_dims = ( float('-inf'), float('inf') )
 
     print('exporting deck file for set %s...' % set_name)
+
+    ## Determine Existence of Local Set Data ##
+
     deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_name)
+    if glob.glob(os.path.join(deckfile_outdir, 'magic-%s-*-*.png' % set_name)):
+        print('exported local deck file for set %s.' % set_name)
+        return
 
     ## Import the Image Files for All Cards in the Set ##
 
@@ -45,7 +51,7 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_cards = deckfile_cpf if deckfile_idx != deckfile_count - 1 \
             else len(set_cards) % deckfile_cpf
 
-        deckfile_name = 'magic-%s-%d-%d.png' % (set_name.lower(), deckfile_idx, deckfile_cards)
+        deckfile_name = 'magic-%s-%d-%d.png' % (set_name, deckfile_idx, deckfile_cards)
         deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
         deckfile_image = Image.new('RGB', deckfile_dims, 'white')
 
