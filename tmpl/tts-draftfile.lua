@@ -142,7 +142,7 @@ function draftcards()
     table.insert(deckcards, cardobj)
   end
 
-  local boostercount = 3 -- 3 * #getSeatedPlayers()
+  local boostercount = 3 * #getSeatedPlayers()
   local boostercolcount = 3
 
   local cardsgenerated = {}
@@ -218,8 +218,10 @@ function draftbooster(mtgset)
       end
     end
 
-    -- NOTE(JRC): In order to prevent impossible situations, all of the minimum
-    -- constraints are satisfied before choosing any cards arbitrarily.
+    -- TODO(JRC): Revise the 'isminrequired' calculation to use a greedy algorithm
+    -- if impossible drafting situations are possible (only if there exists a subset
+    -- of max that has an empty intersection with the set of one or more mins) and
+    -- otherwise uses a non-greedy algorithm.
     local iscardmin, minrequiredcount = false, 0
     for minreqidx, minreqpair in ipairs(boosterminreqs) do
       local minreqfxn, minreqrequired = minreqpair[1], minreqpair[2]
@@ -229,7 +231,10 @@ function draftbooster(mtgset)
       end
       minrequiredcount = minrequiredcount+minreqrequired
     end
+    -- NOTE(JRC): In order to prevent impossible situations, all of the minimum
+    -- constraints are satisfied before choosing any cards arbitrarily.
     local isminrequired = minrequiredcount > 0
+    -- local isminrequired = 15-#boostercards <= minrequiredcount
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
       for _, maxreqidx in ipairs(cardmaxreqidxs) do
