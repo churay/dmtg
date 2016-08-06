@@ -95,7 +95,7 @@ def fetch_set(set_name):
             card_rarity = 'x'
             for rarity_elem in card_rarity_elem.xpath('.//img'):
                 rarity_id = rarity_elem.get('src').lower()
-                rarity_set = re.search(r'^.*set=([a-z][a-z][a-z]).*$', rarity_id).group(1)
+                rarity_set = re.search(r'^.*set=([a-z0-9][a-z0-9][a-z0-9]).*$', rarity_id).group(1)
                 if rarity_set == set_name:
                     card_rarity = re.search(r'^.*rarity=([a-z]).*$', rarity_id).group(1)
                     break
