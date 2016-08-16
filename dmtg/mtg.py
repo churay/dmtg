@@ -10,16 +10,18 @@ import lxml, lxml.html, requests
 def fetch_set(set_name):
     fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
     fetch_cpp = 100
+
     fetch_base_params = {'output': 'standard', 'action': 'advanced',
         'special': 'true', 'set': '+["%s"]' % set_name.upper()}
+    fetch_basic_params = dict(fetch_base_params, **{'type': '+["Basic"]'})
+    fetch_nonbasic_params = dict(fetch_base_params, **{'type': '+!["Basic"]'})
 
     any_mana_regex = r'(%s)' % '|'.join(dmtg.card_colors)
     one_mana_regex = r'^%s$' % any_mana_regex
     multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
 
     print('fetching card data for set %s...' % set_name)
-    set_cards, skipped_cards = [], []
-    set_omissions = set(dmtg.card_basic_lands)
+    set_cards = []
 
     ## Determine Existence of Local Set Data ##
 
@@ -41,7 +43,7 @@ def fetch_set(set_name):
 
     print('  fetching card set metadata...')
 
-    fetch_first_params = dict(fetch_base_params, **{'page': 0})
+    fetch_first_params = dict(fetch_nonbasic_params, **{'page': 0})
     first_result = requests.get(fetch_url, params=fetch_first_params)
     first_htmltree = lxml.html.fromstring(first_result.content)
 
@@ -49,11 +51,11 @@ def fetch_set(set_name):
     set_length = int(re.search(r'^.*\(([0-9]+)\).*', set_header).group(1))
     set_pages = int(math.ceil(set_length / float(fetch_cpp)))
 
-    ## Query Each Page for Cards in Set  ##
+    ## Query Each Page for Cards in Set ##
 
     for page_index in range(set_pages):
         dmtg.display_status('page', page_index, set_pages)
-        fetch_page_params = dict(fetch_base_params, **{'page': page_index})
+        fetch_page_params = dict(fetch_nonbasic_params, **{'page': page_index})
         page_result = requests.get(fetch_url, params=fetch_page_params)
         page_htmltree = lxml.html.fromstring(page_result.content)
 
@@ -62,10 +64,6 @@ def fetch_set(set_name):
 
             card_name_elem = card_info_elem.find_class('cardTitle')[0]
             card_name = unicode(card_name_elem[0].text_content()).encode('utf-8').strip()
-
-            if card_name.lower() in set_omissions:
-                skipped_cards.append(card_name.lower())
-                continue
 
             card_href = card_name_elem[0].get('href')
             card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
@@ -101,7 +99,7 @@ def fetch_set(set_name):
                     break
 
             set_cards.append({
-                'id': str(fetch_cpp * page_index + card_index + 1 - len(skipped_cards)),
+                'id': str(fetch_cpp * page_index + card_index + 1),
                 'mid': card_mid,
                 'name': card_name,
                 'type': card_type,
