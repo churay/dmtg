@@ -8,17 +8,99 @@ import lxml, lxml.html, requests
 ### Module Functions ###
 
 def fetch_set(set_name):
-    fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
-    fetch_cpp = 100
+    ## Define Function Constants and Procedures ##
 
-    fetch_base_params = {'output': 'standard', 'action': 'advanced',
-        'special': 'true', 'set': '+["%s"]' % set_name.upper()}
-    fetch_basic_params = dict(fetch_base_params, **{'type': '+["Basic"]'})
-    fetch_nonbasic_params = dict(fetch_base_params, **{'type': '+!["Basic"]'})
+    def to_utf8(raw_text):
+        return unicode(raw_text).encode('utf-8').strip()
 
-    any_mana_regex = r'(%s)' % '|'.join(dmtg.card_colors)
-    one_mana_regex = r'^%s$' % any_mana_regex
-    multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
+    def fetch_filtered_cards(filter_params, filter_subject):
+        fetch_cpp = 100
+        fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
+
+        any_mana_regex = r'(%s)' % '|'.join(dmtg.card_colors)
+        one_mana_regex = r'^%s$' % any_mana_regex
+        multi_mana_regex = r'^%s or %s$' % (any_mana_regex, any_mana_regex)
+
+        filter_base_params = dict(filter_params,
+            **{'output': 'standard', 'action': 'advanced', 'special': 'true'})
+
+        # Determine Number of Pages in Card List #
+
+        print('  fetching set %s metadata...' % filter_subject)
+
+        fetch_first_params = dict(filter_base_params, **{'page': 0})
+        first_result = requests.get(fetch_url, params=fetch_first_params)
+        first_htmltree = lxml.html.fromstring(first_result.content)
+
+        first_header = first_htmltree.find_class('termdisplay')[0].text_content()
+        filter_length = int(re.search(r'^.*\(([0-9]+)\).*', first_header).group(1))
+        filter_page_count = int(math.ceil(filter_length / float(fetch_cpp)))
+
+        # Query Each Filter Page for Cards #
+
+        filter_set_raw = filter_params.get('set', '+[""]').lower()
+        filter_set = re.search(r'^\+\["(.*)"\]$', filter_set_raw).group(1)
+
+        filter_cards = []
+        for page_index in range(filter_page_count):
+            dmtg.display_status('set %s' % filter_subject, page_index, filter_page_count)
+            fetch_page_params = dict(filter_base_params, **{'page': page_index})
+            page_result = requests.get(fetch_url, params=fetch_page_params)
+            page_htmltree = lxml.html.fromstring(page_result.content)
+
+            for card_index, card_elem in enumerate(page_htmltree.find_class('cardItem')):
+                card_info_elem = card_elem.find_class('middleCol')[0]
+
+                card_name_elem = card_info_elem.find_class('cardTitle')[0]
+                card_name = to_utf8(card_name_elem[0].text_content())
+
+                card_href = card_name_elem[0].get('href')
+                card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
+
+                card_type_elem = card_info_elem.find_class('typeLine')[0]
+                card_type = to_utf8(card_type_elem.text_content())
+                if card_type.find('\r\n') != -1:
+                    card_type = card_type[:card_type.index('\r\n')]
+
+                card_rules_elem = card_info_elem.find_class('rulesText')[0]
+                card_rules = to_utf8(card_rules_elem.text_content())
+
+                card_cost_elem = card_info_elem.find_class('manaCost')[0]
+                card_colors, card_cost = set(), 0
+                for mana_elem in card_cost_elem:
+                    mana_type = mana_elem.get('alt').lower()
+                    if mana_type.isdigit():
+                        card_cost += int(mana_type)
+                    elif re.match(one_mana_regex, mana_type):
+                        card_colors.add(mana_type)
+                        card_cost += 1
+                    elif re.match(multi_mana_regex, mana_type):
+                        card_colors.update(mana_type.split(' or '))
+                        card_cost += 1
+
+                card_rarity_elem = card_elem.find_class('rightCol')[0]
+                card_rarity = 'x'
+                for rarity_elem in card_rarity_elem.xpath('.//img'):
+                    rarity_id = rarity_elem.get('src').lower()
+                    rarity_set = re.search(r'^.*set=([a-z0-9][a-z0-9][a-z0-9]).*$', rarity_id).group(1)
+                    if not filter_set or rarity_set == filter_set:
+                        card_rarity = re.search(r'^.*rarity=([a-z]).*$', rarity_id).group(1)
+                        break
+
+                filter_cards.append({
+                    'id': str(fetch_cpp * page_index + card_index + 1),
+                    'mid': card_mid,
+                    'name': card_name,
+                    'type': card_type,
+                    'rules': card_rules,
+                    'colors': list(card_colors),
+                    'cost': card_cost,
+                    'rarity': card_rarity,
+                })
+
+        return filter_cards
+
+    ## Initialize Fetching Environment ##
 
     print('fetching card data for set %s...' % set_name)
     set_cards = []
@@ -39,75 +121,17 @@ def fetch_set(set_name):
         print('fetched local card data for set %s.' % set_name)
         return set_cards
 
-    ## Determine Number of Pages in Set ##
+    ## Fetch External Data for Set Cards ##
 
-    print('  fetching card set metadata...')
+    set_fetch_params = {'set': '+["%s"]' % set_name.upper()}
 
-    fetch_first_params = dict(fetch_nonbasic_params, **{'page': 0})
-    first_result = requests.get(fetch_url, params=fetch_first_params)
-    first_htmltree = lxml.html.fromstring(first_result.content)
+    set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
+    set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
 
-    set_header = first_htmltree.find_class('termdisplay')[0].text_content()
-    set_length = int(re.search(r'^.*\(([0-9]+)\).*', set_header).group(1))
-    set_pages = int(math.ceil(set_length / float(fetch_cpp)))
+    set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
+    set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
 
-    ## Query Each Page for Cards in Set ##
-
-    for page_index in range(set_pages):
-        dmtg.display_status('page', page_index, set_pages)
-        fetch_page_params = dict(fetch_nonbasic_params, **{'page': page_index})
-        page_result = requests.get(fetch_url, params=fetch_page_params)
-        page_htmltree = lxml.html.fromstring(page_result.content)
-
-        for card_index, card_elem in enumerate(page_htmltree.find_class('cardItem')):
-            card_info_elem = card_elem.find_class('middleCol')[0]
-
-            card_name_elem = card_info_elem.find_class('cardTitle')[0]
-            card_name = unicode(card_name_elem[0].text_content()).encode('utf-8').strip()
-
-            card_href = card_name_elem[0].get('href')
-            card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
-
-            card_type_elem = card_info_elem.find_class('typeLine')[0]
-            card_type = unicode(card_type_elem.text_content()).encode('utf-8').strip()
-            if card_type.find('\r\n') != -1:
-                card_type = card_type[:card_type.index('\r\n')]
-
-            card_rules_elem = card_info_elem.find_class('rulesText')[0]
-            card_rules = unicode(card_rules_elem.text_content()).encode('utf-8').strip()
-
-            card_cost_elem = card_info_elem.find_class('manaCost')[0]
-            card_colors, card_cost = set(), 0
-            for mana_elem in card_cost_elem:
-                mana_type = mana_elem.get('alt').lower()
-                if mana_type.isdigit():
-                    card_cost += int(mana_type)
-                elif re.match(one_mana_regex, mana_type):
-                    card_colors.add(mana_type)
-                    card_cost += 1
-                elif re.match(multi_mana_regex, mana_type):
-                    card_colors.update(mana_type.split(' or '))
-                    card_cost += 1
-
-            card_rarity_elem = card_elem.find_class('rightCol')[0]
-            card_rarity = 'x'
-            for rarity_elem in card_rarity_elem.xpath('.//img'):
-                rarity_id = rarity_elem.get('src').lower()
-                rarity_set = re.search(r'^.*set=([a-z0-9][a-z0-9][a-z0-9]).*$', rarity_id).group(1)
-                if rarity_set == set_name:
-                    card_rarity = re.search(r'^.*rarity=([a-z]).*$', rarity_id).group(1)
-                    break
-
-            set_cards.append({
-                'id': str(fetch_cpp * page_index + card_index + 1),
-                'mid': card_mid,
-                'name': card_name,
-                'type': card_type,
-                'rules': card_rules,
-                'colors': list(card_colors),
-                'cost': card_cost,
-                'rarity': card_rarity,
-            })
+    set_cards = set_nonbasic_cards
 
     ## Save Queried Cards to Local Data File ##
 
