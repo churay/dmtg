@@ -7,7 +7,7 @@ import lxml, lxml.html, requests
 
 ### Module Functions ###
 
-def fetch_set(set_name):
+def fetch_set_cards(set_name):
     ## Define Function Constants and Procedures ##
 
     def to_utf8(raw_text):
@@ -131,6 +131,8 @@ def fetch_set(set_name):
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
 
+    set_token_cards = []
+
     set_cards = set_nonbasic_cards
 
     ## Save Queried Cards to Local Data File ##
@@ -169,3 +171,34 @@ def fetch_card_url(set_name, card_name, card_mid):
     ## Retrieve Low-Res Dependable URL ##
 
     return '%s%s' % (mtgwotc_url, card_mid)
+
+def fetch_set_nametable():
+    nametable_url = 'https://en.wikipedia.org/wiki/List_of_Magic:_The_Gathering_sets'
+
+    def to_text(wiki_elem):
+        citation_subelems = wiki_elem.xpath('.//sup')
+        for citation_subelem in citation_subelems:
+            citation_subelem.drop_tree()
+        return wiki_elem.text_content()
+
+    nametable_result = requests.get(nametable_url)
+    nametable_htmltree = lxml.html.fromstring(nametable_result.content)
+
+    set_nametable = {}
+    for table_elem in nametable_htmltree.find_class('wikitable'):
+        column_heads = [to_text(che).lower() for che in table_elem[0].xpath('.//th')]
+
+        name_cidx = next((hi for hi, h in enumerate(column_heads) if h == 'set'), None)
+        code_cidx = next((hi for hi, h in enumerate(column_heads) if 'code' in h.split()), None)
+        if name_cidx is None or code_cidx is None: continue
+
+        for row_elem in table_elem[2:]:
+            row_entry_elems = row_elem.xpath('./td')
+            if len(row_elem) == 1: continue
+
+            row_name = to_text(row_entry_elems[name_cidx]).lower()
+            row_code = to_text(row_entry_elems[code_cidx]).lower()
+
+            set_nametable[row_code] = row_name
+
+    print(set_nametable)
