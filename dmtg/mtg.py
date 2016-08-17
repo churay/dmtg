@@ -105,6 +105,8 @@ def fetch_set_cards(set_code):
     ## Initialize Fetching Environment ##
 
     set_nametable = fetch_set_nametable()
+    set_name = set_nametable.get(set_code, 'Magic Origins')
+
     print('fetching card data for set %s...' % set_code)
     set_cards = []
 
@@ -125,6 +127,7 @@ def fetch_set_cards(set_code):
 
     ## Fetch External Data for Set Cards ##
 
+    """
     set_fetch_params = {'set': '+["%s"]' % set_code.upper()}
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
@@ -132,10 +135,36 @@ def fetch_set_cards(set_code):
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
+    """
+
+    print('  fetching set token metadata...')
 
     set_token_cards = []
-    # tokens_result = requests.get(tokens_url)
-    # tokens_htmltree = lxml.html.fromstring(tokens_result.content)
+    tokens_result = requests.get(tokens_url)
+    tokens_htmltree = lxml.html.fromstring(tokens_result.content)[1]
+
+    set_header_elems = tokens_htmltree.xpath('.//h2')
+    set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
+        set_name in e.text_content().lower() or e.text_content().lower() in set_name), None)
+
+    set_token_table_elem = tokens_htmltree[set_header_index + 1]
+    for token_index, set_token_row_elem in enumerate(set_token_table_elem[1:]):
+        dmtg.display_status('set token', token_index, len(set_token_table_elem) - 1)
+        token_name_raw = set_token_row_elem[0].text_content()
+        token_type = set_token_row_elem[1].text_content()
+        token_ratio = set_token_row_elem[2].text_content()
+
+        token_name = re.search(r'^(.*?)( [0-9\*]+/[0-9\*]+)?$', token_name_raw).group(1)
+        token_numerator = re.match(r'^([1-9][0-9]*)/[0-9]+$', token_ratio) and \
+            re.search(r'^([1-9][0-9]*)/[0-9]+$', token_ratio).group(1)
+
+        if token_type == 'Token' and token_numerator:
+            token_page_uri = set_token_row_elem[0][0].get('href')
+            token_page_url = 'http://magiccards.info%s' % token_page_uri
+
+            token_result = requests.get(token_page_url)
+            token_htmltree = lxml.html.fromstring(token_result.content)[1]
+            token_url = token_htmltree[3].xpath('.//img')[0].get('src')
 
     set_cards = set_nonbasic_cards
 
@@ -165,10 +194,8 @@ def fetch_card_url(set_code, card_name, card_mid):
     if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':
         card_elem = mtgcards_htmltree[1][6]
         while len(card_elem) > 0:
-            card_elem = next(
-                (se for se in card_elem.iter() if se.tag == 'img'),
-                card_elem[0]
-            )
+            card_elem = next((se for se in card_elem.iter() if se.tag == 'img'),
+                card_elem[0])
             if card_elem.tag == 'img':
                 return card_elem.get('src')
 
@@ -212,16 +239,16 @@ def fetch_set_nametable():
     for table_elem in nametable_htmltree.find_class('wikitable'):
         column_heads = [to_text(che).lower() for che in table_elem[0].xpath('.//th')]
 
-        name_cidx = next((hi for hi, h in enumerate(column_heads) if h == 'set'), None)
-        code_cidx = next((hi for hi, h in enumerate(column_heads) if 'code' in h.split()), None)
-        if name_cidx is None or code_cidx is None: continue
+        name_index = dmtg.get_first(column_heads, lambda i, h: h == 'set')
+        code_index = dmtg.get_first(column_heads, lambda i, h: 'code' in h.split())
+        if name_index is None or code_index is None: continue
 
         for row_elem in table_elem[2:]:
             row_entry_elems = row_elem.xpath('./td')
             if len(row_elem) == 1: continue
 
-            row_name = to_text(row_entry_elems[name_cidx]).lower().strip()
-            row_code = to_text(row_entry_elems[code_cidx]).lower().strip()
+            row_name = to_text(row_entry_elems[name_index]).lower().strip()
+            row_code = to_text(row_entry_elems[code_index]).lower().strip()
 
             set_nametable[row_code] = row_name
 

@@ -30,8 +30,11 @@ def make_set_dirs(set_code):
 
     return set_indir, set_outdir
 
-def display_status(set_code, set_idx, set_num):
+def display_status(set_code, set_index, set_num):
     sys.stdout.write('\r')
-    sys.stdout.write('  fetching %s %d/%d...' % (set_code, set_idx+1, set_num))
-    if set_idx + 1 >= set_num: sys.stdout.write('\n')
+    sys.stdout.write('  fetching %s %d/%d...' % (set_code, set_index+1, set_num))
+    if set_index + 1 >= set_num: sys.stdout.write('\n')
     sys.stdout.flush()
+
+def get_first(list, func):
+    return next((i for i, v in enumerate(list) if func(i, v)), None)
