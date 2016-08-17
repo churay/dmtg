@@ -12,66 +12,83 @@ from collections import defaultdict
 ### Module Functions ###
 
 def export_set_deckfiles(set_code, set_cards, set_extras=[]):
-    deckfile_cpf, deckfile_cpd = 69, (10, 7)
-    deckfile_count = int(math.ceil(len(set_cards) / float(deckfile_cpf)))
-    set_card_dims = ( float('-inf'), float('inf') )
+    ## Define Function Constants and Procedures ##
+
+    def import_set_images(subset_cards, subset_name):
+        deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_code)
+        subset_card_dims = (float('-inf'), float('-inf'))
+
+        for set_card_index, set_card in enumerate(subset_cards):
+            dmtg.display_status('%s image' % subset_name, set_card_index, len(subset_cards))
+            set_card_path = os.path.join(deckfile_indir, '%s-%d.jpeg' % (subset_name, set_card_index))
+
+            if not os.path.isfile(set_card_path):
+                set_card_url = set_card['url'] if set_card['url'] != '' else \
+                    mtg.fetch_card_url(set_code, set_card['name'], set_card['mid'])
+                set_card_request = requests.get(set_card_url)
+                set_card_image = Image.open(StringIO(set_card_request.content))
+                set_card_image.save(set_card_path)
+            else:
+                set_card_image = Image.open(set_card_path)
+
+            subset_card_dims = sorted([subset_card_dims, set_card_image.size])[-1]
+            del set_card_image
+
+        return subset_card_dims
+
+    def export_set_deckfiles(subset_cards, subset_dims, subset_name):
+        deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_code)
+        deckfile_cpf, deckfile_cpd = 69, (10, 7)
+        deckfile_count = int(math.ceil(len(subset_cards) / float(deckfile_cpf)))
+
+        deckfile_dims = tuple(cpd*ppc for cpd, ppc in zip(deckfile_cpd, subset_dims))
+
+        for deckfile_index in range(deckfile_count):
+            dmtg.display_status('%s deck file' % subset_name, deckfile_index, deckfile_count)
+            deckfile_cards = deckfile_cpf if deckfile_index != deckfile_count - 1 \
+                else len(subset_cards) % deckfile_cpf
+
+            deckfile_name = '%s-%d-%d.png' % (subset_name, deckfile_index, deckfile_cards)
+            deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
+            deckfile_image = Image.new('RGB', deckfile_dims, 'white')
+
+            for card_dindex in range(deckfile_cards):
+                card_index = deckfile_cpf * deckfile_index + card_dindex
+
+                card_path = os.path.join(deckfile_indir, '%s-%d.jpeg' % (subset_name, card_index))
+                card_image = Image.open(card_path)
+                deckfile_card_image = card_image if card_image.size == subset_dims \
+                    else card_image.resize(subset_dims)
+
+                deckfile_card_coords = (
+                    int(card_dindex % deckfile_cpd[0]) * subset_dims[0],
+                    int(card_dindex / float(deckfile_cpd[0])) * subset_dims[1],
+                )
+                deckfile_image.paste(deckfile_card_image, deckfile_card_coords)
+                del deckfile_card_image, card_image
+
+            deckfile_image.save(deckfile_path)
+            del deckfile_image
+
+    ## Initialize Exporting Environment ##
 
     print('exporting deck file for set %s...' % set_code)
 
     ## Determine Existence of Local Set Data ##
 
     deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_code)
-    if glob.glob(os.path.join(deckfile_outdir, 'magic-%s-*-*.png' % set_code)):
+    if glob.glob(os.path.join(deckfile_outdir, 'cards-%s-*-*.png' % set_code)) and \
+            glob.glob(os.path.join(deckfile_outdir, 'extras-%s-*-*.png' % set_code)):
         print('exported local deck file for set %s.' % set_code)
         return
 
-    ## Import the Image Files for All Cards in the Set ##
+    ## Export Deck Files for All Cards/Extras ##
 
-    for set_card_idx, set_card in enumerate(set_cards):
-        dmtg.display_status('card', set_card_idx, len(set_cards))
-        set_card_path = os.path.join(deckfile_indir, '%d.jpeg' % set_card_idx)
+    set_card_dims = import_set_images(set_cards, 'cards')
+    set_extra_dims = import_set_images(set_extras, 'extras')
 
-        if not os.path.isfile(set_card_path):
-            set_card_url = mtg.fetch_card_url(set_code, set_card['name'], set_card['mid'])
-            set_card_request = requests.get(set_card_url)
-            set_card_image = Image.open(StringIO(set_card_request.content))
-            set_card_image.save(set_card_path)
-        else:
-            set_card_image = Image.open(set_card_path)
-
-        set_card_dims = sorted([set_card_dims, set_card_image.size])[-1]
-        del set_card_image
-
-    ## Export the Deck Files for the Set ##
-
-    deckfile_dims = tuple(cpd*ppc for cpd, ppc in zip(deckfile_cpd, set_card_dims))
-
-    for deckfile_idx in range(deckfile_count):
-        dmtg.display_status('deck file', deckfile_idx, deckfile_count)
-        deckfile_cards = deckfile_cpf if deckfile_idx != deckfile_count - 1 \
-            else len(set_cards) % deckfile_cpf
-
-        deckfile_name = 'magic-%s-%d-%d.png' % (set_code, deckfile_idx, deckfile_cards)
-        deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
-        deckfile_image = Image.new('RGB', deckfile_dims, 'white')
-
-        for card_didx in range(deckfile_cards):
-            card_idx = deckfile_cpf * deckfile_idx + card_didx
-
-            card_path = os.path.join(deckfile_indir, '%d.jpeg' % card_idx)
-            card_image = Image.open(card_path)
-            deckfile_card_image = card_image if card_image.size == set_card_dims \
-                else card_image.resize(set_card_dims)
-
-            deckfile_card_coords = (
-                int(card_didx % deckfile_cpd[0]) * set_card_dims[0],
-                int(card_didx / float(deckfile_cpd[0])) * set_card_dims[1],
-            )
-            deckfile_image.paste(deckfile_card_image, deckfile_card_coords)
-            del deckfile_card_image, card_image
-
-        deckfile_image.save(deckfile_path)
-        del deckfile_image
+    export_set_deckfiles(set_cards, set_card_dims, 'cards')
+    export_set_deckfiles(set_extras, set_card_dims, 'extras')
 
     print('exported new deck file for set %s.' % set_code)
 

@@ -143,6 +143,9 @@ def fetch_set_cards(set_code):
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
+    if not set_basic_cards:
+        ori_basic_filter = {'set': '+["ori"]', 'type': '+["Basic"]'}
+        set_basic_cards = fetch_filtered_cards(ori_basic_filter, 'basic cards')
 
     print('  fetching set token metadata...')
 
@@ -153,6 +156,8 @@ def fetch_set_cards(set_code):
     set_header_elems = tokens_htmltree.xpath('.//h2')
     set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
         set_name in e.text_content().lower() or e.text_content().lower() in set_name), None)
+    # TODO(JRC): Add logic to handle cases where the queried set doesn't
+    # have tokens (e.g. ema).
 
     set_token_table_elem = tokens_htmltree[set_header_index + 1]
     for token_index, set_token_row_elem in enumerate(set_token_table_elem[1:]):
@@ -199,7 +204,7 @@ def fetch_set_cards(set_code):
 
     with open(set_extras_path, 'w+') as set_extras_file:
         set_extras_tsvfile = csv.DictWriter(set_extras_file, delimiter='\t',
-            fieldnames=set_cards[0].keys())
+            fieldnames=set_extras[0].keys())
         set_extras_tsvfile.writeheader()
         for set_extra in set_extras:
             set_card_dict = copy.copy(set_extra)
