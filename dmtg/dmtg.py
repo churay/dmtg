@@ -14,6 +14,12 @@ tmpl_dir = os.path.join(os.path.dirname(base_dir), 'tmpl')
 
 ### Module Functions ###
 
+def make_base_dir():
+    base_dir = os.path.join(out_dir, 'base')
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+    return base_dir
+
 def make_set_dirs(set_name):
     set_indir = os.path.join(out_dir, '%s-in' % set_name)
     set_outdir = os.path.join(out_dir, '%s-out' % set_name)

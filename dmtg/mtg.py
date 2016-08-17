@@ -10,6 +10,8 @@ import lxml, lxml.html, requests
 def fetch_set_cards(set_name):
     ## Define Function Constants and Procedures ##
 
+    tokens_url = 'http://magiccards.info/extras.html'
+
     def to_utf8(raw_text):
         return unicode(raw_text).encode('utf-8').strip()
 
@@ -102,6 +104,7 @@ def fetch_set_cards(set_name):
 
     ## Initialize Fetching Environment ##
 
+    set_nametable = fetch_set_nametable()
     print('fetching card data for set %s...' % set_name)
     set_cards = []
 
@@ -112,8 +115,7 @@ def fetch_set_cards(set_name):
     if os.path.isfile(set_path):
         with open(set_path, 'r') as set_file:
             set_tsvfile = csv.DictReader(set_file, delimiter='\t')
-            for set_entry in enumerate(set_tsvfile):
-                set_entry = set_entry[1]
+            for set_entry in set_tsvfile:
                 set_entry['colors'] = set_entry['colors'].split(',')
                 set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
                 set_cards.append(set_entry)
@@ -132,6 +134,8 @@ def fetch_set_cards(set_name):
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
 
     set_token_cards = []
+    # tokens_result = requests.get(tokens_url)
+    # tokens_htmltree = lxml.html.fromstring(tokens_result.content)
 
     set_cards = set_nonbasic_cards
 
@@ -173,6 +177,7 @@ def fetch_card_url(set_name, card_name, card_mid):
     return '%s%s' % (mtgwotc_url, card_mid)
 
 def fetch_set_nametable():
+    ## Define Function Constants and Procedures ##
     nametable_url = 'https://en.wikipedia.org/wiki/List_of_Magic:_The_Gathering_sets'
 
     def to_text(wiki_elem):
@@ -181,10 +186,29 @@ def fetch_set_nametable():
             citation_subelem.drop_tree()
         return wiki_elem.text_content()
 
+    ## Initialize Fetching Environment ##
+
+    print('fetching name table for sets...')
+    set_nametable = {}
+
+    ## Determine Existence of Local Name Table Data ##
+
+    base_dir = dmtg.make_base_dir()
+    nametable_path = os.path.join(base_dir, 'nametable.tsv')
+    if os.path.isfile(nametable_path):
+        with open(nametable_path, 'r') as nametable_file:
+            nametable_tsvfile = csv.DictReader(nametable_file, delimiter='\t')
+            for nametable_entry in nametable_tsvfile:
+                set_nametable[nametable_entry['code']] = nametable_entry['name']
+
+        print('fetched local name table for sets.')
+        return set_nametable
+
+    ## Fetch Data for the Local Name Table ##
+
     nametable_result = requests.get(nametable_url)
     nametable_htmltree = lxml.html.fromstring(nametable_result.content)
 
-    set_nametable = {}
     for table_elem in nametable_htmltree.find_class('wikitable'):
         column_heads = [to_text(che).lower() for che in table_elem[0].xpath('.//th')]
 
@@ -196,9 +220,18 @@ def fetch_set_nametable():
             row_entry_elems = row_elem.xpath('./td')
             if len(row_elem) == 1: continue
 
-            row_name = to_text(row_entry_elems[name_cidx]).lower()
-            row_code = to_text(row_entry_elems[code_cidx]).lower()
+            row_name = to_text(row_entry_elems[name_cidx]).lower().strip()
+            row_code = to_text(row_entry_elems[code_cidx]).lower().strip()
 
             set_nametable[row_code] = row_name
 
-    print(set_nametable)
+    ## Save Queried Data to Local Data File ##
+
+    with open(nametable_path, 'w+') as nametable_file:
+        nametable_tsvfile = csv.DictWriter(nametable_file, delimiter='\t', fieldnames=['code', 'name'])
+        nametable_tsvfile.writeheader()
+        for set_code, set_name in set_nametable.iteritems():
+            nametable_tsvfile.writerow({'code': set_code, 'name': set_name})
+
+    print('fetched remote name table for sets.')
+    return set_nametable
