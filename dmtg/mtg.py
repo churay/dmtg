@@ -92,6 +92,7 @@ def fetch_set_cards(set_code):
                 filter_cards.append({
                     'id': str(fetch_cpp * page_index + card_index + 1),
                     'mid': card_mid,
+                    'url': '',
                     'name': card_name,
                     'type': card_type,
                     'rules': card_rules,
@@ -108,26 +109,33 @@ def fetch_set_cards(set_code):
     set_name = set_nametable.get(set_code, 'Magic Origins')
 
     print('fetching card data for set %s...' % set_code)
-    set_cards = []
+    set_cards, set_extras = [], []
 
     ## Determine Existence of Local Set Data ##
 
     set_indir, set_outdir = dmtg.make_set_dirs(set_code)
-    set_path = os.path.join(set_indir, '%s.tsv' % set_code.lower())
-    if os.path.isfile(set_path):
-        with open(set_path, 'r') as set_file:
-            set_tsvfile = csv.DictReader(set_file, delimiter='\t')
-            for set_entry in set_tsvfile:
+    set_cards_path = os.path.join(set_indir, '%s-cards.tsv' % set_code.lower())
+    set_extras_path = os.path.join(set_indir, '%s-extras.tsv' % set_code.lower())
+    if os.path.isfile(set_cards_path) and os.path.isfile(set_extras_path):
+        with open(set_cards_path, 'r') as set_cards_file:
+            set_cards_tsvfile = csv.DictReader(set_cards_file, delimiter='\t')
+            for set_entry in set_cards_tsvfile:
                 set_entry['colors'] = set_entry['colors'].split(',')
                 set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
                 set_cards.append(set_entry)
 
+        with open(set_extras_path, 'r') as set_extras_file:
+            set_extras_tsvfile = csv.DictReader(set_extras_file, delimiter='\t')
+            for set_entry in set_extras_tsvfile:
+                set_entry['colors'] = set_entry['colors'].split(',')
+                set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
+                set_extras.append(set_entry)
+
         print('fetched local card data for set %s.' % set_code)
-        return set_cards
+        return set_cards, set_extras
 
     ## Fetch External Data for Set Cards ##
 
-    """
     set_fetch_params = {'set': '+["%s"]' % set_code.upper()}
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
@@ -135,7 +143,6 @@ def fetch_set_cards(set_code):
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
-    """
 
     print('  fetching set token metadata...')
 
@@ -155,10 +162,9 @@ def fetch_set_cards(set_code):
         token_ratio = set_token_row_elem[2].text_content()
 
         token_name = re.search(r'^(.*?)( [0-9\*]+/[0-9\*]+)?$', token_name_raw).group(1)
-        token_numerator = re.match(r'^([1-9][0-9]*)/[0-9]+$', token_ratio) and \
-            re.search(r'^([1-9][0-9]*)/[0-9]+$', token_ratio).group(1)
+        token_has_index = re.match(r'^([1-9][0-9]*)/[0-9]+$', token_ratio)
 
-        if token_type == 'Token' and token_numerator:
+        if token_type == 'Token' and token_has_index:
             token_page_uri = set_token_row_elem[0][0].get('href')
             token_page_url = 'http://magiccards.info%s' % token_page_uri
 
@@ -166,20 +172,42 @@ def fetch_set_cards(set_code):
             token_htmltree = lxml.html.fromstring(token_result.content)[1]
             token_url = token_htmltree[3].xpath('.//img')[0].get('src')
 
-    set_cards = set_nonbasic_cards
+            set_token_cards.append({
+                'id': str(len(set_basic_cards) + len(set_token_cards) + 1),
+                'mid': '',
+                'url': token_url,
+                'name': token_name,
+                'type': token_type,
+                'rules': '',
+                'colors': [],
+                'cost': 0,
+                'rarity': 't',
+            })
+
+    set_cards, set_extras = set_nonbasic_cards, set_basic_cards + set_token_cards
 
     ## Save Queried Cards to Local Data File ##
 
-    with open(set_path, 'w+') as set_file:
-        set_tsvfile = csv.DictWriter(set_file, delimiter='\t', fieldnames=set_cards[0].keys())
-        set_tsvfile.writeheader()
+    with open(set_cards_path, 'w+') as set_cards_file:
+        set_cards_tsvfile = csv.DictWriter(set_cards_file, delimiter='\t',
+            fieldnames=set_cards[0].keys())
+        set_cards_tsvfile.writeheader()
         for set_card in set_cards:
             set_card_dict = copy.copy(set_card)
             set_card_dict['colors'] = ','.join(set_card_dict['colors'])
-            set_tsvfile.writerow(set_card_dict)
+            set_cards_tsvfile.writerow(set_card_dict)
+
+    with open(set_extras_path, 'w+') as set_extras_file:
+        set_extras_tsvfile = csv.DictWriter(set_extras_file, delimiter='\t',
+            fieldnames=set_cards[0].keys())
+        set_extras_tsvfile.writeheader()
+        for set_extra in set_extras:
+            set_card_dict = copy.copy(set_extra)
+            set_card_dict['colors'] = ','.join(set_card_dict['colors'])
+            set_extras_tsvfile.writerow(set_card_dict)
 
     print('fetched remote card data for set %s.' % set_code)
-    return set_cards
+    return set_cards, set_extras
 
 def fetch_card_url(set_code, card_name, card_mid):
     mtgcards_url = 'http://magiccards.info/query'
@@ -255,7 +283,8 @@ def fetch_set_nametable():
     ## Save Queried Data to Local Data File ##
 
     with open(nametable_path, 'w+') as nametable_file:
-        nametable_tsvfile = csv.DictWriter(nametable_file, delimiter='\t', fieldnames=['code', 'name'])
+        nametable_tsvfile = csv.DictWriter(nametable_file, delimiter='\t',
+            fieldnames=['code', 'name'])
         nametable_tsvfile.writeheader()
         for set_code, set_name in set_nametable.iteritems():
             nametable_tsvfile.writerow({'code': set_code, 'name': set_name})

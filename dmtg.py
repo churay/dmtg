@@ -16,9 +16,9 @@ def main():
 
     for set_code in [arg.lower() for arg in args]:
         print('=========================================')
-        set_cards = dmtg.mtg.fetch_set_cards(set_code)
-        dmtg.tts.export_set_deckfiles(set_code, set_cards)
-        dmtg.tts.export_set_datafiles(set_code, set_cards)
+        set_cards, set_extras = dmtg.mtg.fetch_set_cards(set_code)
+        dmtg.tts.export_set_deckfiles(set_code, set_cards, set_extras)
+        dmtg.tts.export_set_datafiles(set_code, set_cards, set_extras)
         print('=========================================')
 
 ### Miscellaneous ###
