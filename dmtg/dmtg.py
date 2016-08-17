@@ -32,7 +32,7 @@ def make_set_dirs(set_code):
 
 def display_status(set_code, set_index, set_num):
     sys.stdout.write('\r')
-    sys.stdout.write('  processing %s %d/%d...' % (set_code, set_index+1, set_num))
+    sys.stdout.write('  fetching %s %d/%d...' % (set_code, set_index+1, set_num))
     if set_index + 1 >= set_num: sys.stdout.write('\n')
     sys.stdout.flush()
 

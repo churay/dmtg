@@ -106,7 +106,7 @@ def fetch_set_cards(set_code):
     ## Initialize Fetching Environment ##
 
     set_nametable = fetch_set_nametable()
-    set_name = set_nametable.get(set_code, 'Magic Origins')
+    set_name = set_nametable.get(set_code, 'ori')
 
     print('fetching card data for set %s...' % set_code)
     set_cards, set_extras = [], []
@@ -145,7 +145,7 @@ def fetch_set_cards(set_code):
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
     if not set_basic_cards:
         ori_basic_filter = {'set': '+["ori"]', 'type': '+["Basic"]'}
-        set_basic_cards = fetch_filtered_cards(ori_basic_filter, 'basic cards')
+        set_basic_cards = fetch_filtered_cards(ori_basic_filter, 'default basic cards')
 
     print('  fetching set token metadata...')
 
@@ -156,8 +156,9 @@ def fetch_set_cards(set_code):
     set_header_elems = tokens_htmltree.xpath('.//h2')
     set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
         set_name in e.text_content().lower() or e.text_content().lower() in set_name), None)
-    # TODO(JRC): Add logic to handle cases where the queried set doesn't
-    # have tokens (e.g. ema).
+    if not set_header_index:
+        set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
+            'magic origins' in e.text_content().lower() or e.text_content().lower() in 'magic origins'), None)
 
     set_token_table_elem = tokens_htmltree[set_header_index + 1]
     for token_index, set_token_row_elem in enumerate(set_token_table_elem[1:]):
