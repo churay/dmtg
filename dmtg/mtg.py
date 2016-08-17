@@ -7,7 +7,7 @@ import lxml, lxml.html, requests
 
 ### Module Functions ###
 
-def fetch_set_cards(set_name):
+def fetch_set_cards(set_code):
     ## Define Function Constants and Procedures ##
 
     tokens_url = 'http://magiccards.info/extras.html'
@@ -105,13 +105,13 @@ def fetch_set_cards(set_name):
     ## Initialize Fetching Environment ##
 
     set_nametable = fetch_set_nametable()
-    print('fetching card data for set %s...' % set_name)
+    print('fetching card data for set %s...' % set_code)
     set_cards = []
 
     ## Determine Existence of Local Set Data ##
 
-    set_indir, set_outdir = dmtg.make_set_dirs(set_name)
-    set_path = os.path.join(set_indir, '%s.tsv' % set_name.lower())
+    set_indir, set_outdir = dmtg.make_set_dirs(set_code)
+    set_path = os.path.join(set_indir, '%s.tsv' % set_code.lower())
     if os.path.isfile(set_path):
         with open(set_path, 'r') as set_file:
             set_tsvfile = csv.DictReader(set_file, delimiter='\t')
@@ -120,12 +120,12 @@ def fetch_set_cards(set_name):
                 set_entry['colors'] = [c for c in set_entry['colors'] if c != '']
                 set_cards.append(set_entry)
 
-        print('fetched local card data for set %s.' % set_name)
+        print('fetched local card data for set %s.' % set_code)
         return set_cards
 
     ## Fetch External Data for Set Cards ##
 
-    set_fetch_params = {'set': '+["%s"]' % set_name.upper()}
+    set_fetch_params = {'set': '+["%s"]' % set_code.upper()}
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
     set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
@@ -149,17 +149,17 @@ def fetch_set_cards(set_name):
             set_card_dict['colors'] = ','.join(set_card_dict['colors'])
             set_tsvfile.writerow(set_card_dict)
 
-    print('fetched remote card data for set %s.' % set_name)
+    print('fetched remote card data for set %s.' % set_code)
     return set_cards
 
-def fetch_card_url(set_name, card_name, card_mid):
+def fetch_card_url(set_code, card_name, card_mid):
     mtgcards_url = 'http://magiccards.info/query'
     mtgwotc_url = 'http://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid='
 
     ## Attempt to Retrieve High-Res URL ##
 
     mtgcards_result = requests.get(mtgcards_url,
-        {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_name)})
+        {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_code)})
     mtgcards_htmltree = lxml.html.fromstring(mtgcards_result.content)
 
     if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':

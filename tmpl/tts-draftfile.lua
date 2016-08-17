@@ -118,7 +118,7 @@ function draftcards()
   -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
   -- it can be retrieved in this function automatically.
   local deckid = '07a2fc'
-  local deckset = mtgsets.${set_name}
+  local deckset = mtgsets.${set_code}
   local deckobj = getObjectFromGUID(deckid)
   local deckdims = {w=2.5, h=0.25, d=3.5}
 
@@ -257,7 +257,7 @@ end
 -- is completed.
 ---[[
 function testdraft()
-  local draftset = mtgsets.${set_name}
+  local draftset = mtgsets.${set_code}
   local draftbooster = draftbooster(draftset)
 
   local draftcards = {}

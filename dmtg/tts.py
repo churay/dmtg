@@ -11,18 +11,18 @@ from collections import defaultdict
 
 ### Module Functions ###
 
-def export_set_deckfiles(set_name, set_cards):
+def export_set_deckfiles(set_code, set_cards):
     deckfile_cpf, deckfile_cpd = 69, (10, 7)
     deckfile_count = int(math.ceil(len(set_cards) / float(deckfile_cpf)))
     set_card_dims = ( float('-inf'), float('inf') )
 
-    print('exporting deck file for set %s...' % set_name)
+    print('exporting deck file for set %s...' % set_code)
 
     ## Determine Existence of Local Set Data ##
 
-    deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_name)
-    if glob.glob(os.path.join(deckfile_outdir, 'magic-%s-*-*.png' % set_name)):
-        print('exported local deck file for set %s.' % set_name)
+    deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_code)
+    if glob.glob(os.path.join(deckfile_outdir, 'magic-%s-*-*.png' % set_code)):
+        print('exported local deck file for set %s.' % set_code)
         return
 
     ## Import the Image Files for All Cards in the Set ##
@@ -32,7 +32,7 @@ def export_set_deckfiles(set_name, set_cards):
         set_card_path = os.path.join(deckfile_indir, '%d.jpeg' % set_card_idx)
 
         if not os.path.isfile(set_card_path):
-            set_card_url = mtg.fetch_card_url(set_name, set_card['name'], set_card['mid'])
+            set_card_url = mtg.fetch_card_url(set_code, set_card['name'], set_card['mid'])
             set_card_request = requests.get(set_card_url)
             set_card_image = Image.open(StringIO(set_card_request.content))
             set_card_image.save(set_card_path)
@@ -51,7 +51,7 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_cards = deckfile_cpf if deckfile_idx != deckfile_count - 1 \
             else len(set_cards) % deckfile_cpf
 
-        deckfile_name = 'magic-%s-%d-%d.png' % (set_name, deckfile_idx, deckfile_cards)
+        deckfile_name = 'magic-%s-%d-%d.png' % (set_code, deckfile_idx, deckfile_cards)
         deckfile_path = os.path.join(deckfile_outdir, deckfile_name)
         deckfile_image = Image.new('RGB', deckfile_dims, 'white')
 
@@ -73,11 +73,11 @@ def export_set_deckfiles(set_name, set_cards):
         deckfile_image.save(deckfile_path)
         del deckfile_image
 
-    print('exported new deck file for set %s.' % set_name)
+    print('exported new deck file for set %s.' % set_code)
 
-def export_set_datafiles(set_name, set_cards):
-    print('exporting data file for set %s...' % set_name)
-    datafile_indir, datafile_outdir = dmtg.make_set_dirs(set_name)
+def export_set_datafiles(set_code, set_cards):
+    print('exporting data file for set %s...' % set_code)
+    datafile_indir, datafile_outdir = dmtg.make_set_dirs(set_code)
 
     # Import the Data File Templates #
 
@@ -96,7 +96,7 @@ def export_set_datafiles(set_name, set_cards):
     # Import Special Data Set Files #
 
     set_mods = ''
-    modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_name)
+    modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
     if os.path.isfile(modfile_path):
         with file(modfile_path, 'r') as modfile:
             set_mods = modfile.read()
@@ -118,20 +118,20 @@ def export_set_datafiles(set_name, set_cards):
         set_card_strs.append(set_card_str)
 
     set_data = datafile_template.substitute(
-        set_name=set_name.lower(),
+        set_code=set_code.lower(),
         set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
         set_mods=set_mods,
     )
 
     # Export the Data Files for the Set #
 
-    setfile_name = 'magic-%s.lua' % set_name.lower()
+    setfile_name = 'magic-%s.lua' % set_code.lower()
     setfile_path = os.path.join(datafile_outdir, setfile_name)
 
     with file(setfile_path, 'wb') as setfile:
         setfile.write(draftfile_template.substitute(
-            set_name=set_name,
+            set_code=set_code,
             set_data=set_data,
         ))
 
-    print('exported data file for set %s.' % set_name)
+    print('exported data file for set %s.' % set_code)

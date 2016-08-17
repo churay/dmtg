@@ -20,9 +20,9 @@ def make_base_dir():
         os.makedirs(base_dir)
     return base_dir
 
-def make_set_dirs(set_name):
-    set_indir = os.path.join(out_dir, '%s-in' % set_name)
-    set_outdir = os.path.join(out_dir, '%s-out' % set_name)
+def make_set_dirs(set_code):
+    set_indir = os.path.join(out_dir, '%s-in' % set_code)
+    set_outdir = os.path.join(out_dir, '%s-out' % set_code)
 
     for set_dir in (set_indir, set_outdir):
         if not os.path.exists(set_dir):
@@ -30,8 +30,8 @@ def make_set_dirs(set_name):
 
     return set_indir, set_outdir
 
-def display_status(set_name, set_idx, set_num):
+def display_status(set_code, set_idx, set_num):
     sys.stdout.write('\r')
-    sys.stdout.write('  fetching %s %d/%d...' % (set_name, set_idx+1, set_num))
+    sys.stdout.write('  fetching %s %d/%d...' % (set_code, set_idx+1, set_num))
     if set_idx + 1 >= set_num: sys.stdout.write('\n')
     sys.stdout.flush()
