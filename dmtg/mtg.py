@@ -257,8 +257,8 @@ def fetch_set_nametable():
 
     ## Determine Existence of Local Name Table Data ##
 
-    base_dir = dmtg.make_base_dir()
-    nametable_path = os.path.join(base_dir, 'nametable.tsv')
+    base_indir, base_outdir = dmtg.make_set_dirs('base')
+    nametable_path = os.path.join(base_indir, 'nametable.tsv')
     if os.path.isfile(nametable_path):
         with open(nametable_path, 'r') as nametable_file:
             nametable_tsvfile = csv.DictReader(nametable_file, delimiter='\t')
@@ -276,8 +276,8 @@ def fetch_set_nametable():
     for table_elem in nametable_htmltree.find_class('wikitable'):
         column_heads = [to_text(che).lower() for che in table_elem[0].xpath('.//th')]
 
-        name_index = dmtg.get_first(column_heads, lambda i, h: h == 'set')
-        code_index = dmtg.get_first(column_heads, lambda i, h: 'code' in h.split())
+        name_index = get_first(column_heads, lambda i, h: h == 'set')
+        code_index = get_first(column_heads, lambda i, h: 'code' in h.split())
         if name_index is None or code_index is None: continue
 
         for row_elem in table_elem[2:]:

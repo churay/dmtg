@@ -96,7 +96,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     draft_code = '-'.join(draft_set_codes)
 
     print('exporting data file for draft %s...' % draft_code)
-    datafile_indir, datafile_outdir = dmtg.make_set_dirs(draft_code)
+    base_indir, base_outdir = dmtg.make_set_dirs('base')
 
     # Import the Data File Templates #
 
@@ -175,7 +175,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     # Export the Data Files for the Draft #
 
     draftfile_name = 'magic-%s.lua' % draft_code
-    draftfile_path = os.path.join(datafile_outdir, draftfile_name)
+    draftfile_path = os.path.join(base_outdir, draftfile_name)
 
     with file(draftfile_path, 'wb') as draftfile:
         draftfile.write(draftfile_template.substitute(
