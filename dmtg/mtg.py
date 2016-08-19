@@ -155,10 +155,10 @@ def fetch_set_cards(set_code):
 
     set_header_elems = tokens_htmltree.xpath('.//h2')
     set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
-        set_name in e.text_content().lower() or e.text_content().lower() in set_name), None)
+        set_name == e.text_content().lower()), None)
     if not set_header_index:
         set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
-            'magic origins' in e.text_content().lower() or e.text_content().lower() in 'magic origins'), None)
+            set_nametable['ori'] == e.text_content().lower()), None)
 
     set_token_table_elem = tokens_htmltree[set_header_index + 1]
     for token_index, set_token_row_elem in enumerate(set_token_table_elem[1:]):
@@ -288,6 +288,13 @@ def fetch_set_nametable():
             row_code = to_text(row_entry_elems[code_index]).lower().strip()
 
             set_nametable[row_code] = row_name
+
+    # NOTE: There are a few mismatches between these names and the actual
+    # names of sets.  The following code fixes the broken names.
+    set_nametable['m14'] = 'Magic 2014'.lower()
+    set_nametable['m15'] = 'Magic 2015'.lower()
+    set_nametable['mma'] = 'Modern Masters'.lower()
+    set_nametable['mm2'] = 'Modern Masters 2015'.lower()
 
     ## Save Queried Data to Local Data File ##
 
