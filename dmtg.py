@@ -18,7 +18,7 @@ def main():
 
     draft_list = []
     for arg in args:
-        set_codes = re.findall(r'^[a-z0-9]{3}$', arg.lower())
+        set_codes = re.findall(r'[a-z0-9]{3}', arg.lower())
         if not set_codes:
             raise TypeError('All arguments must contain one or more MTG set codes; '
                 '%s contains none.' % arg)
