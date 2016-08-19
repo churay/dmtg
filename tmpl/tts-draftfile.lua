@@ -95,7 +95,7 @@ mtgsets.default.draftrules = {
 
 -- NOTE(JRC): This is where the script automatically populates the output
 -- file with all of the set data.
-${set_data}
+${draft_data}
 
 --[[ tabletop functions ]]--
 
@@ -112,37 +112,51 @@ function onload()
   })
 end
 
--- TODO(JRC): Extend this logic so that multiple sets in a sequence can
--- be drafted.
 function draftcards()
   -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
   -- it can be retrieved in this function automatically.
-  local deckid = '07a2fc'
-  local deckset = mtgsets.${set_code}
-  local deckobj = getObjectFromGUID(deckid)
-  local deckdims = {w=2.5, h=0.25, d=3.5}
+  local deckids = {'07a2fc', '07a2fc', '07a2fc'}
+  local decksets = {mtgsets.${set_code_1}, mtgsets.${set_code_2}, mtgsets.${set_code_3}}
 
-  local deckpos = deckobj.getPosition()
-  local deckcopypos = {x=deckpos.x-deckdims.w, y=1, z=deckpos.z}
-  local draftdeckpos = {x=deckcopypos.x-deckdims.w, y=1, z=deckcopypos.z}
-  local draftareapos = {x=draftdeckpos.x, y=1, z=draftdeckpos.z-deckdims.d}
-
-  randomize()
+  local deckobjs = {}
+  for _, deckid in ipairs(deckids) do table.insert(deckobjs, getObjectFromGUID(deckid)) end
 
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
-  local deckcopy = deckobj.clone({deckcopypos.x, deckcopypos.y, deckcopypos.z})
-  local deckcards= {}
-  for cardidx = 1, deckcopy.getQuantity() do
-    local cardobj = deckcopy.takeObject({
-      position={draftdeckpos.x, draftdeckpos.y+0.25*cardidx, draftdeckpos.z},
-      top=true
+  local draftbasepos = self.getPosition()
+  local deckdims = {w=2.5, h=0.25, d=3.5}
+  local draftcopybasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-1*deckdims.d}
+  local draftstackbasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-2*deckdims.d}
+  local draftareabasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-3*deckdims.d}
+
+  local deckcardlists = {}
+  for deckidx, deckobj in ipairs(deckobjs) do
+    local setoffsetx = (deckidx-1) * deckdims.w
+    local deckcopy = deckobj.clone({
+      draftcopybasepos.x+setoffsetx,
+      draftcopybasepos.y,
+      draftcopybasepos.z
     })
-    cardobj.lock()
-    table.insert(deckcards, cardobj)
+
+    local deckcards = {}
+    for cardidx = 1, deckcopy.getQuantity() do
+      local cardobj = deckcopy.takeObject({
+        position={
+          draftstackbasepos.x+setoffsetx,
+          draftstackbasepos.y+0.25*cardidx,
+          draftstackbasepos.z
+        },
+        top=true
+      })
+      cardobj.lock()
+      table.insert(deckcards, cardobj)
+    end
+    table.insert(deckcardlists, deckcards)
   end
 
-  local boostercount = 3 * #getSeatedPlayers()
+  randomize()
+
+  local boostercount = #deckids * #getSeatedPlayers()
   local boostercolcount = 3
 
   local cardsgenerated = {}
@@ -150,14 +164,15 @@ function draftcards()
     local boosterrow = math.floor((boosteridx-1) / boostercolcount)
     local boostercol = (boosteridx-1) % boostercolcount
     local boosterpos = {
-      x=draftareapos.x+boostercol*deckdims.w,
-      y=draftareapos.y,
-      z=draftareapos.z-boosterrow*deckdims.d
+      x=draftareabasepos.x+boostercol*deckdims.w,
+      y=draftareabasepos.y,
+      z=draftareabasepos.z-boosterrow*deckdims.d
     }
 
-    local boostercardids = draftbooster(deckset)
+    local boostersetidx = ((boosteridx-1) % #deckids) + 1
+    local boostercardids = draftbooster(decksets[boostersetidx])
     for boostercardidx, boostercardid in ipairs(boostercardids) do
-      local cardobj = deckcards[boostercardid]
+      local cardobj = deckcardlists[boostersetidx][boostercardid]
       local cardclone = cardobj.clone({
         position={boosterpos.x, boosterpos.y+0.25*boostercardidx, boosterpos.z},
         snap_to_grid=false
@@ -166,9 +181,11 @@ function draftcards()
     end
   end
 
-  for cardidx = #deckcards, 1, -1 do
-    local cardobj = deckcards[cardidx]
-    cardobj.destruct()
+  for _, deckcards in ipairs(deckcardlists) do
+    for cardidx = #deckcards, 1, -1 do
+      local cardobj = deckcards[cardidx]
+      cardobj.destruct()
+    end
   end
 end
 
@@ -256,8 +273,8 @@ end
 -- TODO(JRC): Remove the following debugging code after more testing
 -- is completed.
 ---[[
-function testdraft()
-  local draftset = mtgsets.${set_code}
+function testdraft(setcode)
+  local draftset = mtgsets[setcode]
   local draftbooster = draftbooster(draftset)
 
   local draftcards = {}

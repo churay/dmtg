@@ -11,7 +11,7 @@ from collections import defaultdict
 
 ### Module Functions ###
 
-def export_set_deckfiles(set_code, set_cards, set_extras=[]):
+def export_set_deckfiles(set_code, set_cards, set_extras):
     ## Define Function Constants and Procedures ##
 
     def import_set_images(subset_cards, subset_name):
@@ -92,9 +92,10 @@ def export_set_deckfiles(set_code, set_cards, set_extras=[]):
 
     print('exported new deck file for set %s.' % set_code)
 
-def export_set_datafiles(set_code, set_cards, set_extras=[]):
-    print('exporting data file for set %s...' % set_code)
-    datafile_indir, datafile_outdir = dmtg.make_set_dirs(set_code)
+def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists):
+    print('exporting data file for draft %s...' % draft_set_codes)
+    draft_code = '-'.join(draft_set_codes)
+    datafile_indir, datafile_outdir = dmtg.make_set_dirs(draft_code)
 
     # Import the Data File Templates #
 
@@ -110,45 +111,75 @@ def export_set_datafiles(set_code, set_cards, set_extras=[]):
     with file(draftfile_path, 'r') as draftfile:
         draftfile_template = string.Template(draftfile.read())
 
-    # Import Special Data Set Files #
+    # Remove Redundant Sets from Draft #
 
-    set_mods = ''
-    modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
-    if os.path.isfile(modfile_path):
-        with file(modfile_path, 'r') as modfile:
-            set_mods = modfile.read()
+    set_codes = list(set(draft_set_codes))
+    set_card_lists = [draft_card_lists[draft_set_codes.index(sc)] for sc in set_codes]
+    set_extra_lists = [draft_extra_lists[draft_set_codes.index(sc)] for sc in set_codes]
 
-    # Export the Data Strings for Each Card #
+    # Import Special Data Files for Draft Sets #
 
-    set_card_strs = []
-    for set_card in set_cards:
-        set_card_str = cardfile_template.substitute(
-            card_id=set_card['id'],
-            card_name='"%s"' % set_card['name'],
-            card_type='"%s"' % set_card['type'],
-            card_rules='"%s"' % set_card['rules'].replace('"', '\\"'),
-            card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
-            card_cost=set_card['cost'],
-            card_rarity='"%s"' % set_card['rarity'],
-        )
+    set_mods_list = []
+    for set_code in set_codes:
+        set_modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
+        if os.path.isfile(set_modfile_path):
+            with file(set_modfile_path, 'r') as set_modfile:
+                set_mods_list.append(set_modfile.read())
 
-        set_card_strs.append(set_card_str)
+    # Export the Data for Each Card/Extra in Draft Sets #
 
-    set_data = datafile_template.substitute(
-        set_code=set_code.lower(),
-        set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
-        set_mods=set_mods,
-    )
+    set_data_list = []
+    for set_code, set_cards, set_extras, set_mods in
+            zip(set_codes, set_card_lists, set_extra_lists, set_mods_list):
+        set_card_strs = []
+        for set_card in set_cards:
+            set_card_strs.append(cardfile_template.substitute(
+                card_id=set_card['id'],
+                card_name='"%s"' % set_card['name'],
+                card_type='"%s"' % set_card['type'],
+                card_rules='"%s"' % set_card['rules'].replace('"', '\\"'),
+                card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
+                card_cost=set_card['cost'],
+                card_rarity='"%s"' % set_card['rarity'],
+            ))
 
-    # Export the Data Files for the Set #
+        set_extra_strs = []
+        for set_extra in set_extras:
+            set_extra_strs.append(cardfile_template.substitute(
+                card_id=set_extra['id'],
+                card_name='"%s"' % set_extra['name'],
+                card_type='"%s"' % set_extra['type'],
+                card_rules='"%s"' % set_extra['rules'].replace('"', '\\"'),
+                card_colors=','.join('"%s"' % sec for sec in set_extra['colors']),
+                card_cost=set_extra['cost'],
+                card_rarity='"%s"' % set_extra['rarity'],
+            ))
 
-    setfile_name = 'magic-%s.lua' % set_code.lower()
-    setfile_path = os.path.join(datafile_outdir, setfile_name)
-
-    with file(setfile_path, 'wb') as setfile:
-        setfile.write(draftfile_template.substitute(
-            set_code=set_code,
-            set_data=set_data,
+        set_data_list.append(datafile_template.substitute(
+            set_code=set_code.lower(),
+            set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
+            set_extras=',\n  '.join(ses.replace('\n', '') for ses in set_extra_strs),
+            set_mods=set_mods,
         ))
 
-    print('exported data file for set %s.' % set_code)
+    # Export the Amalgamated Draft Data #
+
+    draft_data = StringIO()
+    for set_data in set_data_list:
+        draft_data.write(set_data)
+        draft_data.write('\n')
+
+    # Export the Data Files for the Draft #
+
+    draftfile_name = 'magic-%s.lua' % draft_code
+    draftfile_path = os.path.join(datafile_outdir, setfile_name)
+
+    with file(draftfile_path, 'wb') as draftfile:
+        setfile.write(draftfile_template.substitute(
+            set_code_1=draft_set_codes[0],
+            set_code_2=draft_set_codes[1],
+            set_code_3=draft_set_codes[2],
+            draft_data=draft_data,
+        ))
+
+    print('exported data file for draft %s.' % draft_set_codes)

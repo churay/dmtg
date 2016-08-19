@@ -36,5 +36,3 @@ def display_status(set_code, set_index, set_num):
     if set_index + 1 >= set_num: sys.stdout.write('\n')
     sys.stdout.flush()
 
-def get_first(list, func):
-    return next((i for i, v in enumerate(list) if func(i, v)), None)

@@ -84,7 +84,7 @@ def fetch_set_cards(set_code):
                 card_rarity = 'x'
                 for rarity_elem in card_rarity_elem.xpath('.//img'):
                     rarity_id = rarity_elem.get('src').lower()
-                    rarity_set = re.search(r'^.*set=([a-z0-9][a-z0-9][a-z0-9]).*$', rarity_id).group(1)
+                    rarity_set = re.search(r'^.*set=([a-z0-9]{3}).*$', rarity_id).group(1)
                     if not filter_set or rarity_set == filter_set:
                         card_rarity = re.search(r'^.*rarity=([a-z]).*$', rarity_id).group(1)
                         break
@@ -246,6 +246,9 @@ def fetch_set_nametable():
         for citation_subelem in citation_subelems:
             citation_subelem.drop_tree()
         return wiki_elem.text_content()
+
+    def get_first(list, func):
+        return next((i for i, v in enumerate(list) if func(i, v)), None)
 
     ## Initialize Fetching Environment ##
 
