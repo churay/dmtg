@@ -2,7 +2,7 @@
 
 __doc__ = '''Module for DMTG (Draft Magic the Gathering) Console Interface'''
 
-import os, optparse
+import os, optparse, re
 import dmtg
 
 ### Main Entry Point ###
@@ -41,7 +41,7 @@ def main():
             draft_card_lists.append(set_cards)
             draft_extra_lists.append(set_extras)
             dmtg.tts.export_set_deckfiles(set_code, set_cards, set_extras)
-        dmtg.tts.export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extras_list)
+        dmtg.tts.export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         print('=========================================')
 
 ### Miscellaneous ###

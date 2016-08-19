@@ -77,8 +77,8 @@ def export_set_deckfiles(set_code, set_cards, set_extras):
     ## Determine Existence of Local Set Data ##
 
     deckfile_indir, deckfile_outdir = dmtg.make_set_dirs(set_code)
-    if glob.glob(os.path.join(deckfile_outdir, 'cards-%s-*-*.png' % set_code)) and \
-            glob.glob(os.path.join(deckfile_outdir, 'extras-%s-*-*.png' % set_code)):
+    if glob.glob(os.path.join(deckfile_outdir, 'cards-*-*.png')) and \
+            glob.glob(os.path.join(deckfile_outdir, 'extras-*-*.png')):
         print('exported local deck file for set %s.' % set_code)
         return
 
@@ -93,8 +93,9 @@ def export_set_deckfiles(set_code, set_cards, set_extras):
     print('exported new deck file for set %s.' % set_code)
 
 def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists):
-    print('exporting data file for draft %s...' % draft_set_codes)
     draft_code = '-'.join(draft_set_codes)
+
+    print('exporting data file for draft %s...' % draft_code)
     datafile_indir, datafile_outdir = dmtg.make_set_dirs(draft_code)
 
     # Import the Data File Templates #
@@ -125,11 +126,13 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         if os.path.isfile(set_modfile_path):
             with file(set_modfile_path, 'r') as set_modfile:
                 set_mods_list.append(set_modfile.read())
+        else:
+            set_mods_list.append('')
 
     # Export the Data for Each Card/Extra in Draft Sets #
 
     set_data_list = []
-    for set_code, set_cards, set_extras, set_mods in
+    for set_code, set_cards, set_extras, set_mods in \
             zip(set_codes, set_card_lists, set_extra_lists, set_mods_list):
         set_card_strs = []
         for set_card in set_cards:
@@ -172,14 +175,14 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     # Export the Data Files for the Draft #
 
     draftfile_name = 'magic-%s.lua' % draft_code
-    draftfile_path = os.path.join(datafile_outdir, setfile_name)
+    draftfile_path = os.path.join(datafile_outdir, draftfile_name)
 
     with file(draftfile_path, 'wb') as draftfile:
-        setfile.write(draftfile_template.substitute(
+        draftfile.write(draftfile_template.substitute(
             set_code_1=draft_set_codes[0],
             set_code_2=draft_set_codes[1],
             set_code_3=draft_set_codes[2],
-            draft_data=draft_data,
+            draft_data=draft_data.getvalue(),
         ))
 
-    print('exported data file for draft %s.' % draft_set_codes)
+    print('exported data file for draft %s.' % draft_code)
