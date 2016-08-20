@@ -125,33 +125,23 @@ function draftcards()
   -- the location of the drafting area accordingly.
   local draftbasepos = self.getPosition()
   local deckdims = {w=2.5, h=0.25, d=3.5}
-  local draftcopybasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-1*deckdims.d}
-  local draftstackbasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-2*deckdims.d}
-  local draftareabasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-3*deckdims.d}
 
-  local deckcardlists = {}
+  local deckcardobjlists = {}
   for deckidx, deckobj in ipairs(deckobjs) do
-    local setoffsetx = (deckidx-1) * deckdims.w
-    local deckcopy = deckobj.clone({
-      draftcopybasepos.x+setoffsetx,
-      draftcopybasepos.y,
-      draftcopybasepos.z
-    })
+    local deckpos = deckobj.getPosition()
+    local copypos = {x=deckpos.x, y=1, z=deckpos.z-deckdims.d}
+    local deckcopy = deckobj.clone({copypos.x, copypos.y, copypos.z})
 
     local deckcards = {}
     for cardidx = 1, deckcopy.getQuantity() do
       local cardobj = deckcopy.takeObject({
-        position={
-          draftstackbasepos.x+setoffsetx,
-          draftstackbasepos.y+0.25*cardidx,
-          draftstackbasepos.z
-        },
+        position={copypos.x, copypos.y+0.25*cardidx, copypos.z-deckdims.d},
         top=true
       })
       cardobj.lock()
       table.insert(deckcards, cardobj)
     end
-    table.insert(deckcardlists, deckcards)
+    table.insert(deckcardobjlists, deckcards)
   end
 
   randomize()
@@ -159,6 +149,7 @@ function draftcards()
   local boostercount = #deckids * #getSeatedPlayers()
   local boostercolcount = 3
 
+  local draftareabasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-deckdims.d}
   local cardsgenerated = {}
   for boosteridx = 1, boostercount do
     local boosterrow = math.floor((boosteridx-1) / boostercolcount)
@@ -172,7 +163,7 @@ function draftcards()
     local boostersetidx = ((boosteridx-1) % #deckids) + 1
     local boostercardids = draftbooster(decksets[boostersetidx])
     for boostercardidx, boostercardid in ipairs(boostercardids) do
-      local cardobj = deckcardlists[boostersetidx][boostercardid]
+      local cardobj = deckcardobjlists[boostersetidx][boostercardid]
       local cardclone = cardobj.clone({
         position={boosterpos.x, boosterpos.y+0.25*boostercardidx, boosterpos.z},
         snap_to_grid=false
@@ -181,9 +172,9 @@ function draftcards()
     end
   end
 
-  for _, deckcards in ipairs(deckcardlists) do
-    for cardidx = #deckcards, 1, -1 do
-      local cardobj = deckcards[cardidx]
+  for _, deckcardobjlist in ipairs(deckcardobjlists) do
+    for cardidx = #deckcardobjlist, 1, -1 do
+      local cardobj = deckcardobjlist[cardidx]
       cardobj.destruct()
     end
   end
