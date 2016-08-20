@@ -112,6 +112,10 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     with file(draftfile_path, 'r') as draftfile:
         draftfile_template = string.Template(draftfile.read())
 
+    setupfile_path = os.path.join(dmtg.tmpl_dir, 'tts-setupfile.lua')
+    with file(setupfile_path, 'r') as setupfile:
+        setupfile_template = string.Template(setupfile.read())
+
     # Remove Redundant Sets from Draft #
 
     set_codes = list(set(draft_set_codes))
@@ -174,11 +178,20 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
     # Export the Data Files for the Draft #
 
-    draftfile_name = 'magic-%s.lua' % draft_code
+    draftfile_name = 'draft-%s.lua' % draft_code
     draftfile_path = os.path.join(base_outdir, draftfile_name)
-
     with file(draftfile_path, 'wb') as draftfile:
         draftfile.write(draftfile_template.substitute(
+            set_code_1=draft_set_codes[0],
+            set_code_2=draft_set_codes[1],
+            set_code_3=draft_set_codes[2],
+            draft_data=draft_data.getvalue(),
+        ))
+
+    setupfile_name = 'setup-%s.lua' % draft_code
+    setupfile_path = os.path.join(base_outdir, setupfile_name)
+    with file(setupfile_path, 'wb') as setupfile:
+        setupfile.write(setupfile_template.substitute(
             set_code_1=draft_set_codes[0],
             set_code_2=draft_set_codes[1],
             set_code_3=draft_set_codes[2],
