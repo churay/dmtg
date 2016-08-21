@@ -100,17 +100,11 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
     # Import the Data File Templates #
 
-    cardfile_path = os.path.join(dmtg.tmpl_dir, 'tts-cardfile.lua')
-    with file(cardfile_path, 'r') as cardfile:
-        cardfile_template = string.Template(cardfile.read())
-
-    datafile_path = os.path.join(dmtg.tmpl_dir, 'tts-datafile.lua')
-    with file(datafile_path, 'r') as datafile:
-        datafile_template = string.Template(datafile.read())
-
-    globalfile_path = os.path.join(dmtg.tmpl_dir, 'tts-globalfile.lua')
-    with file(globalfile_path, 'r') as globalfile:
-        globalfile_template = string.Template(globalfile.read())
+    datafile_templates = {}
+    for template_name in ('card', 'set', 'global', 'draftbutton', 'setupbutton'):
+        template_path = os.path.join(dmtg.tmpl_dir, 'tts-%s.lua' % template_name)
+        with file(template_path, 'r') as template_file:
+            datafile_templates[template_name] = string.Template(template_file.read())
 
     # Remove Redundant Sets from Draft #
 
@@ -136,7 +130,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
             zip(set_codes, set_card_lists, set_extra_lists, set_mods_list):
         set_card_strs = []
         for set_card in set_cards:
-            set_card_strs.append(cardfile_template.substitute(
+            set_card_strs.append(datafile_templates['card'].substitute(
                 card_id=set_card['id'],
                 card_name='"%s"' % set_card['name'],
                 card_type='"%s"' % set_card['type'],
@@ -148,7 +142,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
         set_extra_strs = []
         for set_extra in set_extras:
-            set_extra_strs.append(cardfile_template.substitute(
+            set_extra_strs.append(datafile_templates['card'].substitute(
                 card_id=set_extra['id'],
                 card_name='"%s"' % set_extra['name'],
                 card_type='"%s"' % set_extra['type'],
@@ -158,7 +152,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
                 card_rarity='"%s"' % set_extra['rarity'],
             ))
 
-        set_data_list.append(datafile_template.substitute(
+        set_data_list.append(datafile_templates['set'].substitute(
             set_code=set_code.lower(),
             set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
             set_extras=',\n  '.join(ses.replace('\n', '') for ses in set_extra_strs),
@@ -174,13 +168,18 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
     # Export the Data Files for the Draft #
 
-    globalfile_path = os.path.join(base_outdir, 'global-%s.lua' % draft_code)
-    with file(globalfile_path, 'wb') as globalfile:
-        globalfile.write(globalfile_template.substitute(
-            set_code_1=draft_set_codes[0],
-            set_code_2=draft_set_codes[1],
-            set_code_3=draft_set_codes[2],
-            draft_data=draft_data.getvalue(),
-        ))
+    global_draft_data = datafile_templates['global'].substitute(
+        draft_data=draft_data.getvalue(),
+        set_code_1='"%s"' % draft_set_codes[0],
+        set_code_2='"%s"' % draft_set_codes[1],
+        set_code_3='"%s"' % draft_set_codes[2],
+    )
+
+    for template_name in ('draftbutton', 'setupbutton'):
+        draftfile_path = os.path.join(base_outdir, '%s-%s.lua' % (template_name, draft_code))
+        with file(draftfile_path, 'wb') as draftfile:
+            draftfile.write(datafile_templates[template_name].substitute(
+                global_data=global_draft_data
+            ))
 
     print('exported data file for draft %s.' % draft_code)

@@ -1,6 +1,6 @@
 --[[ global functions ]]--
 
-mtgfxns = {}
+local mtgfxns = {}
 
 -- utility functions --
 
@@ -81,10 +81,10 @@ end
 
 -- table functions --
 
-function mtgfxns.expanddeck(deckobj, expanddir=1)
+function mtgfxns.expanddeck(deckobj, expanddir)
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
-  local expanddir = expanddir < 0 and -1 or 1
+  local expanddir = (expanddir == nil or expanddir > 0) and 1 or -1
   local deckdims = {w=2.5, h=0.25, d=3.5}
 
   local deckpos = deckobj.getPosition()
@@ -114,7 +114,7 @@ end
 
 -- card data --
 
-mtgsets = {}
+local mtgsets = {}
 
 mtgsets.default = {}
 mtgsets.default.cards = {}
@@ -140,7 +140,7 @@ ${draft_data}
 
 -- draft data --
 
-mtgdraft = {}
+local mtgdraft = {}
 
 mtgdraft.setcodes = {${set_code_1}, ${set_code_2}, ${set_code_3}}
 mtgdraft.settables = {
@@ -165,13 +165,3 @@ mtgdraft.extradeckobjs = {
   getObjectFromGUID('123456')
   --]]
 }
-
---[[ tabletop functions ]]--
-
-function onload()
-  -- TODO(JRC): Add functionality here if necessary.
-end
-
-function update()
-  -- TODO(JRC): Add functionality here if necessary.
-end

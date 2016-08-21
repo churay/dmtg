@@ -1,3 +1,5 @@
+${global_data}
+
 --[[ tabletop functions ]]--
 
 function onload()
