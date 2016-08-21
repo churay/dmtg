@@ -16,14 +16,21 @@ function onload()
 end
 
 function spawnextras()
+  -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
+  -- it can be retrieved in this function automatically.
+  local setextradeckobjs = {
+    getObjectFromGUID('54fd65'),
+    getObjectFromGUID('54fd65'),
+    getObjectFromGUID('54fd65')
+  }
+
   local draftset2objs = {}
   for setidx, setcode in ipairs(mtgdraft.setcodes) do
-    if draftset2objs[draftset] ~= nil then
-      local setdeckobj = mtgdraft.extradeckobjs[setidx]
-      draftset2objs[draftset] = mtgfxns.expanddeck(setdeckobj, 1)
+    if draftset2objs[setcode] == nil then
+      draftset2objs[setcode] = mtgfxns.expanddeck(setextradeckobjs[setidx], 1)
 
       -- TODO(JRC): Try to elegantly merge this with the code for 'expanddeck'.
-      for extraidx, extraobj in ipairs(draftset2objs[draftset]) do
+      for extraidx, extraobj in ipairs(draftset2objs[setcode]) do
         local extradata = mtgdraft.settables[setidx].extras[extraidx]
         extraobj.setName(extradata.name)
         extraobj.setDescription(extradata.rules)
@@ -34,7 +41,7 @@ function spawnextras()
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
   local spawnbasepos = self.getPosition()
-  local bagdims = {w=2.5, h=1.0, d=2.5}
+  local deckdims, bagdims = mtgfxns.getdeckdims(), mtgfxns.getbagdims()
   local extrapercol = 3
   local landbasepos = {x=spawnbasepos.x-deckdims.w, y=1, z=spawnbasepos.z-deckdims.d}
 
@@ -73,8 +80,8 @@ function spawnextras()
 
   -- NOTE: Using the set codes from the 'draftset2objs' table eliminates
   -- redundant extras from being included.
-  for setcode in pairs(draftset2objs) do
-    local setidx = mtgfxns.getsetidx(setcode)
+  for setcode, setextraobjs in pairs(draftset2objs) do
+    local setidx = mtgdraft.setidxs[setcode]
     local settable = mtgdraft.settables[setidx]
     for extraidx, extraextra in ipairs(settable.extras) do
       if extraextra.rarity ~= 'l' then
@@ -82,7 +89,7 @@ function spawnextras()
         local extrarow = math.floor((extracount - 1) / extrapercol)
         local extracol = (extracount - 1) % extrapercol
 
-        local extracard = mtgdraft.extradeckobjs[setidx][extraidx]
+        local extracard = setextraobjs[extraidx]
         local extrabagpos = {
           x=extrabasepos.x+extracol*bagdims.w,
           y=extrabasepos.y,

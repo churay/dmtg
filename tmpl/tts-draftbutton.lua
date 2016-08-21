@@ -16,14 +16,21 @@ function onload()
 end
 
 function draftcards()
+  -- TODO(JRC): Figure out a better way to determine the deck's GUID so that
+  -- it can be retrieved in this function automatically.
+  local setcarddeckobjs = {
+    getObjectFromGUID('b6756d'),
+    getObjectFromGUID('b6756d'),
+    getObjectFromGUID('b6756d')
+  }
+
   local draftset2objs = {}
   for setidx, setcode in ipairs(mtgdraft.setcodes) do
-    if draftset2objs[draftset] ~= nil then
-      local setdeckobj = mtgdraft.carddeckobjs[setidx]
-      draftset2objs[draftset] = mtgfxns.expanddeck(setdeckobj, setcode, -1)
+    if draftset2objs[setcode] == nil then
+      draftset2objs[setcode] = mtgfxns.expanddeck(setcarddeckobjs[setidx], -1)
 
       -- TODO(JRC): Try to elegantly merge this with the code for 'expanddeck'.
-      for cardidx, cardobj in ipairs(draftset2objs[draftset]) do
+      for cardidx, cardobj in ipairs(draftset2objs[setcode]) do
         local carddata = mtgdraft.settables[setidx].cards[cardidx]
         cardobj.setName(carddata.name)
         cardobj.setDescription(carddata.rules)
@@ -32,6 +39,7 @@ function draftcards()
   end
 
   local draftbasepos = self.getPosition()
+  local deckdims = mtgfxns.getdeckdims()
   local draftareabasepos = {x=draftbasepos.x-deckdims.w, y=1, z=draftbasepos.z-deckdims.d}
   local boostercount = #mtgdraft.setcodes * #getSeatedPlayers()
   local boostercolcount = 3
@@ -46,7 +54,7 @@ function draftcards()
       z=draftareabasepos.z-boosterrow*deckdims.d
     }
 
-    local boostersetidx = ((boosteridx-1) % #deckids) + 1
+    local boostersetidx = ((boosteridx-1) % #mtgdraft.setcodes) + 1
     local boostercardids = draftbooster(mtgdraft.settables[boostersetidx])
     for boostercardidx, boostercardid in ipairs(boostercardids) do
       local cardobj = draftset2objs[mtgdraft.setcodes[boostersetidx]][boostercardid]
@@ -146,7 +154,7 @@ function draftbooster(settable, randomize)
 end
 
 function testdraft(setcode)
-  local settable = mtgdraft.settables[mtgfxns.getsetidx(setcode)]
+  local settable = mtgdraft.settables[mtgdraft.setidxs[setcode]]
   local draftbooster = draftbooster(settable, false)
 
   local draftcards = {}

@@ -81,6 +81,14 @@ end
 
 -- table functions --
 
+function mtgfxns.getdeckdims()
+  return {w=2.5, h=0.25, d=3.5}
+end
+
+function mtgfxns.getbagdims()
+  return {w=2.5, h=1.0, d=2.5}
+end
+
 function mtgfxns.expanddeck(deckobj, expanddir)
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
@@ -149,19 +157,7 @@ mtgdraft.settables = {
   mtgsets[mtgdraft.setcodes[3]]
 }
 
--- TODO(JRC): Figure out a better way to determine the deck's GUID so that
--- it can be retrieved in this function automatically.
-mtgdraft.carddeckobjs = {
-  --[[
-  getObjectFromGUID('123456'),
-  getObjectFromGUID('123456'),
-  getObjectFromGUID('123456')
-  --]]
-}
-mtgdraft.extradeckobjs = {
-  --[[
-  getObjectFromGUID('123456'),
-  getObjectFromGUID('123456'),
-  getObjectFromGUID('123456')
-  --]]
-}
+mtgdraft.setidxs = {}
+for codeidx, code in ipairs(mtgdraft.setcodes) do
+  if mtgdraft.setidxs[code] == nil then mtgdraft.setidxs[code] = codeidx end
+end
