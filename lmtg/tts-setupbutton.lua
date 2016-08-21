@@ -17,7 +17,15 @@ function spawnextras()
   local draftset2objs = {}
   for setidx, setcode in ipairs(mtgdraft.setcodes) do
     if draftset2objs[draftset] ~= nil then
-      draftset2objs[draftset] = mtgfxns.expanddeck(mtgdraft.extradeckobjs[setidx], 1)
+      local setdeckobj = mtgdraft.extradeckobjs[setidx]
+      draftset2objs[draftset] = mtgfxns.expanddeck(setdeckobj, 1)
+
+      -- TODO(JRC): Try to elegantly merge this with the code for 'expanddeck'.
+      for extraidx, extraobj in ipairs(draftset2objs[draftset]) do
+        local extradata = mtgdraft.settables[setidx].extras[extraidx]
+        extraobj.setName(extradata.name)
+        extraobj.setDescription(extradata.rules)
+      end
     end
   end
 
@@ -28,6 +36,9 @@ function spawnextras()
   local extrapercol = 3
   local landbasepos = {x=spawnbasepos.x-deckdims.w, y=1, z=spawnbasepos.z-deckdims.d}
 
+  -- TODO(JRC): Basics are only taken from the first set as one set is generally
+  -- all that's necessary, but this may need to be improved for sets with extra
+  -- basics in different sets of the draft.
   local landcount = 0
   for landidx, landextra in ipairs(mtgdraft.settables[1].extras) do
     if landextra.rarity == 'l' then

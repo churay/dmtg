@@ -17,7 +17,15 @@ function draftcards()
   local draftset2objs = {}
   for setidx, setcode in ipairs(mtgdraft.setcodes) do
     if draftset2objs[draftset] ~= nil then
-      draftset2objs[draftset] = mtgfxns.expanddeck(mtgdraft.carddeckobjs[setidx], -1)
+      local setdeckobj = mtgdraft.carddeckobjs[setidx]
+      draftset2objs[draftset] = mtgfxns.expanddeck(setdeckobj, setcode, -1)
+
+      -- TODO(JRC): Try to elegantly merge this with the code for 'expanddeck'.
+      for cardidx, cardobj in ipairs(draftset2objs[draftset]) do
+        local carddata = mtgdraft.settables[setidx].cards[cardidx]
+        cardobj.setName(carddata.name)
+        cardobj.setDescription(carddata.rules)
+      end
     end
   end
 

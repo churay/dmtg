@@ -81,7 +81,6 @@ end
 
 -- table functions --
 
--- TODO(JRC): Set the names of expanded cards here.
 function mtgfxns.expanddeck(deckobj, expanddir=1)
   -- TODO(JRC): Automatically determine the size of the deck and adjust
   -- the location of the drafting area accordingly.
