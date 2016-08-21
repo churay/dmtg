@@ -44,6 +44,8 @@ function draftcards()
   local boostercount = #mtgdraft.setcodes * #getSeatedPlayers()
   local boostercolcount = 3
 
+  mtgfxns.randomize()
+
   local cardsgenerated = {}
   for boosteridx = 1, boostercount do
     local boosterrow = math.floor((boosteridx-1) / boostercolcount)
@@ -73,10 +75,7 @@ end
 
 --[[ drafting functions ]]--
 
-function draftbooster(settable, randomize)
-  if randomize == nil then randomize = true end
-  if randomize then mtgfxns.randomize() end
-
+function draftbooster(settable)
   local boostermaxreqs = mtgfxns.deepcopy(settable.draftrules.maxreqs)
   local boosterminreqs = mtgfxns.deepcopy(settable.draftrules.minreqs)
 
