@@ -10,10 +10,14 @@ import lxml, lxml.html, requests
 def fetch_set_cards(set_code):
     ## Define Function Constants and Procedures ##
 
+    card_base_url = 'http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid='
     tokens_url = 'http://magiccards.info/extras.html'
 
     def to_utf8(raw_text):
         return unicode(raw_text).encode('utf-8').strip()
+
+    def to_card_mid(card_url):
+        return re.search(r'^.*multiverseid=([0-9]+).*$', card_url).group(1)
 
     def fetch_filtered_cards(filter_params, filter_subject):
         fetch_cpp = 100
@@ -57,7 +61,7 @@ def fetch_set_cards(set_code):
                 card_name = to_utf8(card_name_elem[0].text_content())
 
                 card_href = card_name_elem[0].get('href')
-                card_mid = re.search(r'^.*multiverseid=([0-9]+).*$', card_href).group(1)
+                card_mid = to_card_mid(card_href)
 
                 card_type_elem = card_info_elem.find_class('typeLine')[0]
                 card_type = to_utf8(card_type_elem.text_content())
@@ -103,6 +107,10 @@ def fetch_set_cards(set_code):
 
         return filter_cards
 
+    def finalize_cards(set_cards):
+        for card_index, card in enumerate(set_cards, 1):
+            card['id'] = card_index
+
     ## Initialize Fetching Environment ##
 
     set_nametable = fetch_set_nametable()
@@ -147,6 +155,41 @@ def fetch_set_cards(set_code):
         ori_basic_filter = {'set': '+["ori"]', 'type': '+["Basic"]'}
         set_basic_cards = fetch_filtered_cards(ori_basic_filter, 'default basic cards')
 
+    set_xform_filter = dict(set_nonbasic_filter, **{'text': '+["transform"]'})
+    set_xform_cards = fetch_filtered_cards(set_xform_filter, 'transform cards')
+
+    print('  fecthing two-sided card pairs...')
+
+    set_twosided_cards = []
+    for card_index, xform_card in enumerate(set_xform_cards):
+        dmtg.display_status('two sided pair', card_index, len(set_xform_cards))
+
+        # NOTE: Skip processing a card if its opposite side has already been seen.
+        if any(xform_card['mid'] in (cf['mid'], cb['mid']) for cf, cb in set_twosided_cards):
+            continue
+
+        card_url = '%s%s' % (card_base_url, xform_card['mid'])
+        card_page = requests.get(card_url)
+        card_htmltree = lxml.html.fromstring(card_page.content)[1]
+
+        card_content_elem = card_htmltree.find_class('cardComponentTable')[0]
+        card_component_elems = card_content_elem.find_class('cardComponentContainer')
+        card_component_elems = [e for e in card_component_elems if len(e) > 0]
+
+        if len(card_component_elems) == 2:
+            card_faces = []
+            for card_component_elem in card_component_elems:
+                card_face_image = next((i for i in card_component_elem.xpath('.//img')
+                    if i.get('id') and 'cardImage' in i.get('id')), None)
+                card_face_href = card_face_image.get('src')
+                card_face_mid = to_card_mid(card_face_href)
+
+                card_face = next((c for c in set_nonbasic_cards
+                    if c['mid'] == card_face_mid), None)
+                card_faces.append(card_face)
+
+            set_twosided_cards.append(tuple(card_faces))
+
     print('  fetching set token metadata...')
 
     set_token_cards = []
@@ -190,7 +233,15 @@ def fetch_set_cards(set_code):
                 'rarity': 't',
             })
 
-    set_cards, set_extras = set_nonbasic_cards, set_basic_cards + set_token_cards
+    ## Finalize Card Sets and Ordering ##
+
+    set_back_cards = dict((cb['mid'], cb) for cf, cb in set_twosided_cards)
+
+    set_cards = [c for c in set_nonbasic_cards if c['mid'] not in set_back_cards]
+    set_extras = set_basic_cards + set_back_cards.values() + set_token_cards
+
+    finalize_cards(set_cards)
+    finalize_cards(set_extras)
 
     ## Save Queried Cards to Local Data File ##
 
