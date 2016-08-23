@@ -12,6 +12,7 @@ def fetch_set_cards(set_code):
 
     card_base_url = 'http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid='
     tokens_url = 'http://magiccards.info/extras.html'
+    default_code = 'm15'
 
     def to_utf8(raw_text):
         return unicode(raw_text).encode('utf-8').strip()
@@ -114,7 +115,7 @@ def fetch_set_cards(set_code):
     ## Initialize Fetching Environment ##
 
     set_nametable = fetch_set_nametable()
-    set_name = set_nametable.get(set_code, 'ori')
+    set_name = set_nametable.get(set_code, default_code)
 
     print('fetching card data for set %s...' % set_code)
     set_cards, set_extras = [], []
@@ -152,8 +153,8 @@ def fetch_set_cards(set_code):
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
     if not set_basic_cards:
-        ori_basic_filter = {'set': '+["ori"]', 'type': '+["Basic"]'}
-        set_basic_cards = fetch_filtered_cards(ori_basic_filter, 'default basic cards')
+        default_basic_filter = {'set': '+["%s"]' % default_code, 'type': '+["Basic"]'}
+        set_basic_cards = fetch_filtered_cards(default_basic_filter, 'default basic cards')
 
     set_xform_filter = dict(set_nonbasic_filter, **{'text': '+["transform"]'})
     set_xform_cards = fetch_filtered_cards(set_xform_filter, 'transform cards')
@@ -201,7 +202,7 @@ def fetch_set_cards(set_code):
         set_name == e.text_content().lower()), None)
     if not set_header_index:
         set_header_index = next((tokens_htmltree.index(e) for e in set_header_elems if
-            set_nametable['ori'] == e.text_content().lower()), None)
+            set_nametable[default_code] == e.text_content().lower()), None)
 
     set_token_table_elem = tokens_htmltree[set_header_index + 1]
     for token_index, set_token_row_elem in enumerate(set_token_table_elem[1:]):
