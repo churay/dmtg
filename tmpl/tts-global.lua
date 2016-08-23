@@ -12,7 +12,7 @@ function mtgfxns.randomshuffle(list)
   end
 
   for validx = 1, #list do
-    local lastidx = #list-validx+1
+    local lastidx = #list - validx + 1
     local randidx = math.random(lastidx)
     slist[randidx], slist[lastidx] = slist[lastidx], slist[randidx]
   end
@@ -71,12 +71,6 @@ end
 
 function mtgfxns.israrity(rarity)
   return function(card) return card.rarity == rarity end
-end
-
-function mtgfxns.getsetidx(setcode)
-  for codeidx, code in ipairs(mtgdraft.setcodes) do
-    if setcode == code then return codeidx end
-  end
 end
 
 -- table functions --

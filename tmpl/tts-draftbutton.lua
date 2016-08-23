@@ -98,10 +98,18 @@ function draftbooster(settable)
   end
 
   local randomcards = mtgfxns.randomshuffle(mtgfxns.range(#settable.cards))
-  local boostercards, randomcardidxidx = {}, 0
+  local boostercards, randomcardidxidx, cardskipcount = {}, 0, -1
   while #boostercards < 15 do
     repeat
-      randomcardidxidx = (randomcardidxidx%(#randomcards-#boostercards))+1
+      randomcardidxidx = (randomcardidxidx % #randomcards) + 1
+
+      cardskipcount = cardskipcount + 1
+      if cardskipcount >= #settable.cards then
+        print(cardskipcount)
+        print('Error: Failed to find a card that fits the draft.')
+        printdraft(boostercards, settable)
+        do return boostercards end
+      end
     until randomcards[randomcardidxidx] ~= -1
     local randomcardidx = randomcards[randomcardidxidx]
     local randomcard = settable.cards[randomcardidx]
@@ -130,12 +138,12 @@ function draftbooster(settable)
         table.insert(cardminreqidxs, minreqidx)
         if minreqrequired ~= 0 then iscardmin = true end
       end
-      minrequiredcount = minrequiredcount+minreqrequired
+      minrequiredcount = minrequiredcount + minreqrequired
     end
     -- NOTE(JRC): In order to prevent impossible situations, all of the minimum
     -- constraints are satisfied before choosing any cards arbitrarily.
     local isminrequired = minrequiredcount > 0
-    -- local isminrequired = 15-#boostercards <= minrequiredcount
+    -- local isminrequired = 15 - #boostercards <= minrequiredcount
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
       for _, maxreqidx in ipairs(cardmaxreqidxs) do
@@ -145,6 +153,7 @@ function draftbooster(settable)
         boosterminreqs[minreqidx][2] = math.max(boosterminreqs[minreqidx][2]-1, 0)
       end
       randomcards[randomcardidxidx] = -1
+      cardskipcount = -1
       table.insert(boostercards, randomcardidx)
     end
   end
@@ -152,9 +161,16 @@ function draftbooster(settable)
   return boostercards
 end
 
+--[[ debugging functions ]]--
+
 function testdraft(setcode)
   local settable = mtgdraft.settables[mtgdraft.setidxs[setcode]]
   local draftbooster = draftbooster(settable, false)
+  printdraft(draftbooster, settable)
+end
+
+function printdraft(draftbooster, settable)
+  local settable = settable or mtgdraft.settables[1]
 
   local draftcards = {}
   local draftcolors = {green=0, red=0, blue=0, white=0, black=0, colorless=0}
@@ -165,14 +181,14 @@ function testdraft(setcode)
     table.insert(draftcards, boostercard.name)
 
     if #boostercard.colors == 0 then
-      draftcolors.colorless = draftcolors.colorless+1
+      draftcolors.colorless = draftcolors.colorless + 1
     else
       for _, cardcolor in ipairs(boostercard.colors) do
-        draftcolors[cardcolor] = draftcolors[cardcolor]+1
+        draftcolors[cardcolor] = draftcolors[cardcolor] + 1
       end
     end
 
-    draftrarities[boostercard.rarity] = draftrarities[boostercard.rarity]+1
+    draftrarities[boostercard.rarity] = draftrarities[boostercard.rarity] + 1
   end
 
   function tabletostr(t)
