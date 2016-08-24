@@ -105,7 +105,6 @@ function draftbooster(settable)
 
       cardskipcount = cardskipcount + 1
       if cardskipcount >= #settable.cards then
-        print(cardskipcount)
         print('Error: Failed to find a card that fits the draft.')
         printdraft(boostercards, settable)
         do return boostercards end
