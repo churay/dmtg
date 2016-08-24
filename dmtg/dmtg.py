@@ -30,3 +30,5 @@ def display_status(set_code, set_index, set_num):
     if set_index + 1 >= set_num: sys.stdout.write('\n')
     sys.stdout.flush()
 
+def to_utf8(raw_text):
+    return unicode(raw_text).encode('utf-8').strip().replace('\xe2\x80\x99', '\'')

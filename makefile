@@ -22,7 +22,7 @@ main : $(PROJ_MAIN)
 	$(PYTHON) $(PYTHON_FLAGS) $< rtr
 
 tidy :
-	rm -rf $(OUT_DIR)/base-out
+	rm -rf $(OUT_DIR)/base-in $(OUT_DIR)/base-out
 
 clean :
 	rm -rf $(SRC_DIR)/*.pyc $(OUT_DIR)
