@@ -332,14 +332,16 @@ def fetch_set_metatable():
             set_code = '' if len(set_code_elem) == 0 else \
                 re.search(r'^.*/(\w{3})_[^/]*\.png$', set_code_elem[0].get('src')).group(1)
 
+            # TODO(JRC): There are a few sets that are broken and don't have
+            # a set sizes; these sets are a default size of 200 for now.
             set_size_raw = block_set_elem.find_class('quantity')[0].text_content().strip()
             set_size = re.search(r'^(\d+) cards$', set_size_raw).group(1) if \
-                re.match(r'^(\d+) cards$', set_size_raw) else ''
+                re.match(r'^(\d+) cards$', set_size_raw) else '200'
 
             set_release_elem = block_set_elem.find_class('releaseDate')[0]
             set_release = dateutil.parser.parse(set_release_elem.text_content().strip())
 
-            if set_size and set_code and int(set_size) >= 50:
+            if set_code and int(set_size) >= 50:
                 set_metatable.setdefault(set_code.lower(), {
                     'name': dmtg.to_utf8(set_name.lower()),
                     'code': set_code.lower(),

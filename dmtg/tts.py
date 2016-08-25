@@ -97,7 +97,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     set_metatable = mtg.fetch_set_metatable()
 
     def is_land(card):
-        return bool(re.search(r'\bland\b', card.type.lower()))
+        return bool(re.search(r'\bland\b', card['type'].lower()))
 
     print('exporting data file for draft %s...' % draft_code)
     base_indir, base_outdir = dmtg.make_set_dirs('base')
@@ -128,7 +128,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
                 (re.match(r'^([7-9]ed)|(10e)$', set_code) or \
                 set_metadata['release'] >= set_metatable['ala']['release']):
             set_mod_names.append('landset')
-        if any(c.rarity == 'm' for c in set_cards):
+        if any(c['rarity'] == 'm' for c in set_cards):
             set_mod_names.append('mythicset')
         if set_code in ('isd', 'dka', 'soi', 'emn'):
             set_mod_names.append('transformset')
@@ -137,7 +137,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
         for set_mod_name in set_mod_names:
             set_mod_template = datafile_templates['mod-%s' % set_mod_name]
-            set_mods.write(set_mod_template.subsitute(set_code=set_code))
+            set_mods.write(set_mod_template.substitute(set_code=set_code))
             set_mods.write('\n')
 
         set_modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
@@ -145,6 +145,8 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
             with file(set_modfile_path, 'r') as set_modfile:
                 set_mods.write(set_modefile.read())
                 set_mods.write('\n')
+
+        set_mods_list.append(set_mods)
 
     # Export the Data for Each Card/Extra in Draft Sets #
 
@@ -179,7 +181,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
             set_code=set_code.lower(),
             set_cards=',\n  '.join(scs.replace('\n', '') for scs in set_card_strs),
             set_extras=',\n  '.join(ses.replace('\n', '') for ses in set_extra_strs),
-            set_mods=set_mods,
+            set_mods=set_mods.getvalue(),
         ))
 
     # Export the Amalgamated Draft Data #
