@@ -361,6 +361,7 @@ def fetch_set_metatable():
     # rectify these differences.
     for set_metadata in set_metatable.values():
         set_metadata['name'] = set_metadata['name'].replace('core set', '').strip()
+    set_metatable['mm2']['name'] = 'Modern Masters 2015'.lower()
 
     ## Save Queried Data to Local Data File ##
 
