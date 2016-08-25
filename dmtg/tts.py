@@ -101,8 +101,8 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     # Import the Data File Templates #
 
     datafile_templates = {}
-    for template_name in ('card', 'set', 'global', 'draftbutton', 'setupbutton'):
-        template_path = os.path.join(dmtg.tmpl_dir, 'tts-%s.lua' % template_name)
+    for template_path in glob.glob(os.path.join(dmtg.tmpl_dir, '*.lua')):
+        template_name = os.path.splitext(os.path.basename(template_path))[0]
         with file(template_path, 'r') as template_file:
             datafile_templates[template_name] = string.Template(template_file.read())
 
@@ -168,14 +168,14 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
     # Export the Data Files for the Draft #
 
-    global_draft_data = datafile_templates['global'].substitute(
+    global_draft_data = datafile_templates['tts-global'].substitute(
         draft_data=draft_data.getvalue(),
         set_code_1='"%s"' % draft_set_codes[0],
         set_code_2='"%s"' % draft_set_codes[1],
         set_code_3='"%s"' % draft_set_codes[2],
     )
 
-    for template_name in ('draftbutton', 'setupbutton'):
+    for template_name in ('tts-draftbutton', 'tts-setupbutton'):
         draftfile_path = os.path.join(base_outdir, '%s-%s.lua' % (template_name, draft_code))
         with file(draftfile_path, 'wb') as draftfile:
             draftfile.write(datafile_templates[template_name].substitute(

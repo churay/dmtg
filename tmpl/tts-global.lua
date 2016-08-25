@@ -120,21 +120,23 @@ local mtgsets = {}
 
 mtgsets.default = {}
 mtgsets.default.cards = {}
+mtgsets.default.extras = {}
 mtgsets.default.draftrules = {
+  cardcount = 15,
   minreqs = {
     {mtgfxns.iscolor('green'), 2},
     {mtgfxns.iscolor('red'), 2},
     {mtgfxns.iscolor('blue'), 2},
     {mtgfxns.iscolor('white'), 2},
     {mtgfxns.iscolor('black'), 2},
-    {mtgfxns.island, 1}
+    {mtgfxns.island, 0}
   },
   maxreqs = {
     {mtgfxns.israrity('c'), 11},
     {mtgfxns.israrity('u'), 3},
-    {mtgfxns.israrity('r'), function(r) return r <= 7/8 and 1 or 0 end},
-    {mtgfxns.israrity('m'), function(r) return r > 7/8 and 1 or 0 end},
-    {mtgfxns.island, 1}
+    {mtgfxns.israrity('r'), 1},
+    {mtgfxns.israrity('m'), 0},
+    {mtgfxns.island, 0}
   }
 }
 
