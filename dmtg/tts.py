@@ -94,6 +94,10 @@ def export_set_deckfiles(set_code, set_cards, set_extras):
 
 def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists):
     draft_code = '-'.join(draft_set_codes)
+    set_metatable = mtg.fetch_set_metatable()
+
+    def is_land(card):
+        return bool(re.search(r'\bland\b', card.type.lower()))
 
     print('exporting data file for draft %s...' % draft_code)
     base_indir, base_outdir = dmtg.make_set_dirs('base')
@@ -115,13 +119,32 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     # Import Special Data Files for Draft Sets #
 
     set_mods_list = []
-    for set_code in set_codes:
+    for set_code, set_cards in zip(set_codes, set_card_lists):
+        set_mods = StringIO()
+        set_metadata = set_metatable[set_code]
+
+        set_mod_names = []
+        if sum(int(is_land(c)) for c in set_cards) >= 5 and \
+                (re.match(r'^([7-9]ed)|(10e)$', set_code) or \
+                set_metadata['release'] >= set_metatable['ala']['release']):
+            set_mod_names.append('landset')
+        if any(c.rarity == 'm' for c in set_cards):
+            set_mod_names.append('mythicset')
+        if set_code in ('isd', 'dka', 'soi', 'emn'):
+            set_mod_names.append('transformset')
+        if set_code in ('cns', 'cn2'):
+            set_mod_names.append('draftset')
+
+        for set_mod_name in set_mod_names:
+            set_mod_template = datafile_templates['mod-%s' % set_mod_name]
+            set_mods.write(set_mod_template.subsitute(set_code=set_code))
+            set_mods.write('\n')
+
         set_modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
         if os.path.isfile(set_modfile_path):
             with file(set_modfile_path, 'r') as set_modfile:
-                set_mods_list.append(set_modfile.read())
-        else:
-            set_mods_list.append('')
+                set_mods.write(set_modefile.read())
+                set_mods.write('\n')
 
     # Export the Data for Each Card/Extra in Draft Sets #
 

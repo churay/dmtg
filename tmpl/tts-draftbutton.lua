@@ -78,6 +78,7 @@ end
 function draftbooster(settable)
   local boostermaxreqs = mtgfxns.deepcopy(settable.draftrules.maxreqs)
   local boosterminreqs = mtgfxns.deepcopy(settable.draftrules.minreqs)
+  local boostermaxcardcount = settable.draftrules.cardcount
 
   -- NOTE(JRC): All requirements that have a function as their value determine
   -- their contents based on a randomness quotient supplied by the booster.
@@ -99,7 +100,7 @@ function draftbooster(settable)
 
   local randomcards = mtgfxns.randomshuffle(mtgfxns.range(#settable.cards))
   local boostercards, randomcardidxidx, cardskipcount = {}, 0, -1
-  while #boostercards < 15 do
+  while #boostercards < boostermaxcardcount do
     repeat
       randomcardidxidx = (randomcardidxidx % #randomcards) + 1
 
@@ -142,7 +143,7 @@ function draftbooster(settable)
     -- NOTE(JRC): In order to prevent impossible situations, all of the minimum
     -- constraints are satisfied before choosing any cards arbitrarily.
     local isminrequired = minrequiredcount > 0
-    -- local isminrequired = 15 - #boostercards <= minrequiredcount
+    -- local isminrequired = boostermaxcardcount - #boostercards <= minrequiredcount
 
     if not iscardmaxed and (not isminrequired or iscardmin) then
       for _, maxreqidx in ipairs(cardmaxreqidxs) do
