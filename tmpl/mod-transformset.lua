@@ -1,3 +1,5 @@
+-- transform set mod --
+
 function mtgfxns.isxformcard(card)
   return card.fid > 0
 end

@@ -1,3 +1,5 @@
+-- draft set mod --
+
 function mtgfxns.isdraftcard(card)
   local isdraftcard = string.match(string.lower(card.rules), '%f[%a]draft%f[%A]')
   local isconspiracy = string.lower(card.type) == 'conspiracy'
