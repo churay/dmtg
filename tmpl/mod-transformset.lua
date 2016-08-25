@@ -1,10 +1,13 @@
 function mtgfxns.isxformcard(card)
-  -- TODO(JRC): Implement this function.
-  return true
+  return card.fid > 0
 end
 
--- TODO(JRC): Reimplement all other functions to not recognize transform cards
--- as any rarity.
+for _, maxreqpair in ipairs(mtgsets.${set_code}.draftrules.maxreqs) do
+  local maxreqfxn = maxreqpair[1]
+  maxreqpair[1] = function(card)
+    return not mtgfxns.isxformcard(card) and maxreqfxn(card)
+  end
+end
 
 mtgsets.${set_code}.draftrules.maxreqs[1][2] = mtgsets.${set_code}.draftrules.maxreqs[1][2] - 1
 

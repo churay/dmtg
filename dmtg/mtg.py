@@ -95,6 +95,7 @@ def fetch_set_cards(set_code):
                 filter_cards.append({
                     'id': str(fetch_cpp * page_index + card_index + 1),
                     'mid': card_mid,
+                    'fid': str(0),
                     'url': '',
                     'name': card_name,
                     'type': card_type,
@@ -223,6 +224,7 @@ def fetch_set_cards(set_code):
             set_token_cards.append({
                 'id': str(len(set_basic_cards) + len(set_token_cards) + 1),
                 'mid': '',
+                'fid': str(0),
                 'url': token_url,
                 'name': token_name,
                 'type': token_type,
@@ -241,6 +243,10 @@ def fetch_set_cards(set_code):
 
     finalize_cards(set_cards)
     finalize_cards(set_extras)
+
+    for card_front, card_back in set_twosided_cards:
+        card_front['fid'] = card_back['id']
+        card_back['fid'] = card_front['id']
 
     ## Save Queried Cards to Local Data File ##
 

@@ -157,6 +157,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         for set_card in set_cards:
             set_card_strs.append(datafile_templates['card'].substitute(
                 card_id=set_card['id'],
+                card_fid=set_card['fid'],
                 card_name='"%s"' % set_card['name'],
                 card_type='"%s"' % set_card['type'],
                 card_rules='"%s"' % set_card['rules'].replace('"', '\\"'),
@@ -169,6 +170,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         for set_extra in set_extras:
             set_extra_strs.append(datafile_templates['card'].substitute(
                 card_id=set_extra['id'],
+                card_fid=set_extra['fid'],
                 card_name='"%s"' % set_extra['name'],
                 card_type='"%s"' % set_extra['type'],
                 card_rules='"%s"' % set_extra['rules'].replace('"', '\\"'),
