@@ -320,8 +320,9 @@ def fetch_set_metatable():
     for block_elem in metatable_htmltree.find_class('card-set-archive-table'):
         block_list_elem = block_elem.xpath('.//ul')[0]
 
-        block_name = block_list_elem.xpath('.//li')[0]
-        if 'decks' in block_name.text_content().lower():
+        block_name_raw = block_list_elem.xpath('.//li')[0].text_content().lower()
+        block_name = block_name_raw.replace('block', '').strip()
+        if 'decks' in block_name_raw:
             continue
 
         for block_set_elem in block_list_elem.xpath('.//li')[1:]:
@@ -342,6 +343,7 @@ def fetch_set_metatable():
                 set_metatable.setdefault(set_code.lower(), {
                     'name': dmtg.to_utf8(set_name.lower()),
                     'code': set_code.lower(),
+                    'block': block_name.lower(),
                     'size': set_size,
                     'release': set_release,
                 })
@@ -361,7 +363,6 @@ def fetch_set_metatable():
         for metatable_entry in set_metatable.values():
             metadata_dict = copy.copy(metatable_entry)
             metadata_dict['release'] = str(metadata_dict['release'])
-            print metadata_dict
             metatable_tsvfile.writerow(metadata_dict)
 
     print('fetched remote metadata for all sets.')
