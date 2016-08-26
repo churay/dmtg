@@ -177,16 +177,12 @@ def fetch_set_cards(set_code):
 
     ## Fetch External Data for Set Cards ##
 
-    set_fetch_params = {'set': '+["%s"]' % set_code.upper()}
+    set_fetch_params = {'set': '+["%s"]' % set_metadata['name'].lower()}
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
     set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
-    # NOTE: This is necessary because there are some older sets that have
-    # inconsistent set codes listed in Gatherer (e.g. Arabian Nights, Unglued).
     if not set_nonbasic_cards:
-        set_fetch_params['set'] = '+["%s"]' % set_metadata['name']
-        set_nonbasic_filter.update(set_fetch_params)
-        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'backup nonbasic cards')
+        raise RuntimeError('No cards for set %s were found!' % set_code)
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
