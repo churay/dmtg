@@ -18,6 +18,11 @@ def fetch_set_cards(set_code):
     def to_card_mid(card_url):
         return re.search(r'^.*multiverseid=(\d+).*$', card_url).group(1)
 
+    def get_url_arg(url, arg_name):
+        url_regex = r'^.*(\?|&)%s=([^&]*)((&.+$)|($))' % arg_name
+        return re.match(url_regex, url).group(2) if re.search(url_regex, url) \
+            else None
+
     def fetch_filtered_cards(filter_params, filter_subject):
         fetch_cpp = 100
         fetch_url = 'http://gatherer.wizards.com/Pages/Search/Default.aspx'
@@ -37,7 +42,14 @@ def fetch_set_cards(set_code):
         first_request = requests.get(fetch_url, params=fetch_first_params)
         first_htmltree = lxml.html.fromstring(first_request.content)
 
-        first_header = first_htmltree.find_class('termdisplay')[0].text_content()
+        first_header_elems = first_htmltree.find_class('termdisplay')
+        # NOTE: If there's an error querying the number of items in the filtered
+        # subset, then just return empty; when this happens, Gatherer typically
+        # queries a card or displays an error message.
+        if not first_header_elems:
+            return []
+
+        first_header = first_header_elems[0].text_content()
         filter_length = int(re.search(r'^.*\((\d+)\).*', first_header).group(1))
         filter_page_count = int(math.ceil(filter_length / float(fetch_cpp)))
 
@@ -86,11 +98,25 @@ def fetch_set_cards(set_code):
                 card_rarity_elem = card_elem.find_class('rightCol')[0]
                 card_rarity = 'x'
                 for rarity_elem in card_rarity_elem.xpath('.//img'):
-                    rarity_id = rarity_elem.get('src').lower()
-                    rarity_set = re.search(r'^.*set=(\w{3}).*$', rarity_id).group(1)
-                    if not filter_set or rarity_set == filter_set:
-                        card_rarity = re.search(r'^.*rarity=(\w).*$', rarity_id).group(1)
+                    rarity_src = rarity_elem.get('src').lower()
+                    rarity_alt = rarity_elem.get('alt').lower()
+
+                    is_correct_rarity = False
+                    if not filter_set:
+                        is_correct_rarity = True
+                    elif len(filter_set) == 3:
+                        rarity_set = get_url_arg(rarity_src, 'set')
+                        is_correct_rarity = rarity_set == filter_set
+                    else:
+                        is_correct_rarity = re.match(r'%s .*$' % filter_set, rarity_alt)
+
+                    if is_correct_rarity:
+                        card_rarity = get_url_arg(rarity_src, 'rarity')
                         break
+
+                if card_rarity == 'x':
+                    raise RuntimeError('Could not determine rarity for '
+                        'card "%s" of set "%s".' % (card_name, filter_set))
 
                 filter_cards.append({
                     'id': str(fetch_cpp * page_index + card_index + 1),
@@ -151,16 +177,16 @@ def fetch_set_cards(set_code):
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
     set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
-    # NOTE: This is necessary because there are some sets that don't produce
-    # results when their code is searched (e.g. Unhinged).
+    # NOTE: This is necessary because there are some older sets that have
+    # inconsistent set codes listed in Gatherer (e.g. Arabian Nights, Unglued).
     if not set_nonbasic_cards:
         set_fetch_params['set'] = '+["%s"]' % set_metadata['name']
         set_nonbasic_filter.update(set_fetch_params)
-        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
+        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'backup nonbasic cards')
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')
-    if not set_basic_cards:
+    if len(set_basic_cards) < 5:
         default_basic_filter = {'set': '+["%s"]' % default_code, 'type': '+["Basic"]'}
         set_basic_cards = fetch_filtered_cards(default_basic_filter, 'default basic cards')
 
@@ -289,6 +315,9 @@ def fetch_card_url(set_code, card_name, card_mid):
     mtgcards_request = requests.get(mtgcards_url,
         {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_code)})
     mtgcards_htmltree = lxml.html.fromstring(mtgcards_request.content)
+
+    # TODO(JRC): Improve this search to only take a card image if its name matches
+    # the name of the card exactly.
 
     if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':
         card_elem = mtgcards_htmltree[1][6]
