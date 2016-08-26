@@ -314,18 +314,18 @@ def fetch_card_url(set_code, card_name, card_mid):
 
     mtgcards_request = requests.get(mtgcards_url,
         {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_code)})
-    mtgcards_htmltree = lxml.html.fromstring(mtgcards_request.content)
+    mtgcards_htmltree = lxml.html.fromstring(mtgcards_request.content)[1]
 
-    # TODO(JRC): Improve this search to only take a card image if its name matches
-    # the name of the card exactly.
-
-    if len(mtgcards_htmltree[1]) >= 7 and mtgcards_htmltree[1][4].tag == 'table':
-        card_elem = mtgcards_htmltree[1][6]
-        while len(card_elem) > 0:
-            card_elem = next((se for se in card_elem.iter() if se.tag == 'img'),
-                card_elem[0])
-            if card_elem.tag == 'img':
-                return card_elem.get('src')
+    # TODO(JRC): Extend this so that all matching pages are searched if more
+    # the queried card matches more than the page limit number of cards.
+    mtgcards_table_elems = mtgcards_htmltree.xpath('./table')
+    if len(mtgcards_table_elems) > 1:
+        mtgcards_card_elems = mtgcards_table_elems[2:-1]
+        for card_elem in mtgcards_card_elems:
+            card_image_elem = card_elem[0].xpath('.//td')[0].xpath('.//img')[0]
+            card_image_name = dmtg.to_utf8(card_image_elem.get('alt'))
+            if card_name.lower() == card_image_name.lower():
+                return card_image_elem.get('src')
 
     ## Retrieve Low-Res Dependable URL ##
 
