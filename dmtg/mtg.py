@@ -6,6 +6,16 @@ import os, sys, csv
 import dateutil.parser
 import lxml, lxml.html, requests
 
+### Module Classes ###
+
+class FetchError(Exception):
+    def __init__(self, *args, **kwargs):
+        super(Exception, self).__init__(*args, **kwargs)
+
+class FetchRarityError(FetchError):
+    def __init__(self, *args, **kwargs):
+        super(FetchRarityError, self).__init__(*args, **kwargs)
+
 ### Module Functions ###
 
 def fetch_set_cards(set_code):
@@ -115,7 +125,7 @@ def fetch_set_cards(set_code):
                         break
 
                 if card_rarity == 'x':
-                    raise RuntimeError('Could not determine rarity for '
+                    raise FetchRarityError('Could not determine rarity for '
                         'card "%s" of set "%s".' % (card_name, filter_set))
 
                 # NOTE: Token cards are typeless cards that are skipped.
@@ -179,8 +189,15 @@ def fetch_set_cards(set_code):
 
     set_fetch_params = {'set': '+["%s"]' % set_metadata['name'].lower()}
 
-    set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
-    set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
+    try:
+        set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
+        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
+    except FetchError:
+        print ''
+        set_fetch_params['set'] = '+["%s"]' % set_code.upper()
+        set_nonbasic_filter.update(set_fetch_params)
+        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'backup nonbasic cards')
+
     if not set_nonbasic_cards:
         raise RuntimeError('No cards for set %s were found!' % set_code)
 
