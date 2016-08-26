@@ -135,7 +135,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         if set_code in ('cns', 'cn2'):
             set_mod_names.append('draftset')
         if set_code in ('all', 'chr'):
-            set_mode_names.append('12cardset')
+            set_mod_names.append('12cardset')
         if set_code in ('arn', 'atq', 'drk', 'fem', 'hml'):
             set_mod_names.append('8cardset')
 
@@ -147,7 +147,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         set_modfile_path = os.path.join(dmtg.lua_dir, '%s.lua' % set_code)
         if os.path.isfile(set_modfile_path):
             with file(set_modfile_path, 'r') as set_modfile:
-                set_mods.write(set_modefile.read())
+                set_mods.write(set_modfile.read())
                 set_mods.write('\n')
 
         set_mods_list.append(set_mods)
