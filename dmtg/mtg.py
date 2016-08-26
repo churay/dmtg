@@ -118,8 +118,12 @@ def fetch_set_cards(set_code):
                     raise RuntimeError('Could not determine rarity for '
                         'card "%s" of set "%s".' % (card_name, filter_set))
 
+                # NOTE: Token cards are typeless cards that are skipped.
+                if card_type == '':
+                    continue
+
                 filter_cards.append({
-                    'id': str(fetch_cpp * page_index + card_index + 1),
+                    'id': str(len(filter_cards) + 1),
                     'mid': card_mid,
                     'fid': str(0),
                     'url': '',
