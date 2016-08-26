@@ -114,7 +114,10 @@ def fetch_set_cards(set_code):
     ## Initialize Fetching Environment ##
 
     set_metatable = fetch_set_metatable()
-    set_metadata = set_metatable.get(set_code, default_code)
+    set_metadata = set_metatable.get(set_code, None)
+
+    if set_metadata is None:
+        raise RuntimeError('The given set code %s is not valid!' % set_code)
 
     print('fetching card data for set %s...' % set_code)
     set_cards, set_extras = [], []
@@ -148,6 +151,12 @@ def fetch_set_cards(set_code):
 
     set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
     set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
+    # NOTE: This is necessary because there are some sets that don't produce
+    # results when their code is searched (e.g. Unhinged).
+    if not set_nonbasic_cards:
+        set_fetch_params['set'] = '+["%s"]' % set_metadata['name']
+        set_nonbasic_filter.update(set_fetch_params)
+        set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
 
     set_basic_filter = dict(set_fetch_params, **{'type': '+["Basic"]'})
     set_basic_cards = fetch_filtered_cards(set_basic_filter, 'basic cards')

@@ -134,6 +134,10 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
             set_mod_names.append('transformset')
         if set_code in ('cns', 'cn2'):
             set_mod_names.append('draftset')
+        if set_code in ('all', 'chr'):
+            set_mode_names.append('12cardset')
+        if set_code in ('arn', 'atq', 'drk', 'fem', 'hml'):
+            set_mod_names.append('8cardset')
 
         for set_mod_name in set_mod_names:
             set_mod_template = datafile_templates['mod-%s' % set_mod_name]

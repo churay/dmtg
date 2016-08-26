@@ -142,6 +142,17 @@ mtgsets.default.draftrules = {
 
 ${draft_data}
 
+for mtgsetcode, mtgsettable in pairs(mtgsets) do
+  local setcardcount = mtgsettable.draftrules.cardcount
+  local setminreqs = mtgsettable.draftrules.minreqs
+
+  if string.len(mtgsetcode) == 3 and setcardcount < 15 then
+    for colorruleidx = 1, 5 do
+      setminreqs[colorruleidx][2] = 1
+    end
+  end
+end
+
 -- draft data --
 
 local mtgdraft = {}
