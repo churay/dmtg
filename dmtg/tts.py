@@ -96,8 +96,10 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     draft_code = '-'.join(draft_set_codes)
     set_metatable = mtg.fetch_set_metatable()
 
-    def is_land(card):
-        return bool(re.search(r'\bland\b', card['type'].lower()))
+    def is_common_land(card):
+        is_common = card['rarity'] == 'c'
+        is_land = bool(re.search(r'\bland\b', card['type'].lower()))
+        return is_common and is_land
 
     print('exporting data file for draft %s...' % draft_code)
     base_indir, base_outdir = dmtg.make_set_dirs('base')
@@ -124,9 +126,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
         set_metadata = set_metatable[set_code]
 
         set_mod_names = []
-        if sum(int(is_land(c)) for c in set_cards) >= 5 and \
-                (re.match(r'^([7-9]ed)|(10e)$', set_code) or \
-                set_metadata['release'] >= set_metatable['ala']['release']):
+        if sum(int(is_common_land(c)) for c in set_cards) >= 5:
             set_mod_names.append('landset')
         if any(c['rarity'] == 'm' for c in set_cards):
             set_mod_names.append('mythicset')

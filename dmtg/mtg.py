@@ -193,7 +193,7 @@ def fetch_set_cards(set_code):
         set_nonbasic_filter = dict(set_fetch_params, **{'type': '+!["Basic"]'})
         set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'nonbasic cards')
     except FetchError:
-        print ''
+        print('')
         set_fetch_params['set'] = '+["%s"]' % set_code.upper()
         set_nonbasic_filter.update(set_fetch_params)
         set_nonbasic_cards = fetch_filtered_cards(set_nonbasic_filter, 'backup nonbasic cards')
