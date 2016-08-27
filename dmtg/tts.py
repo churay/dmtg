@@ -96,10 +96,7 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     draft_code = '-'.join(draft_set_codes)
     set_metatable = mtg.fetch_set_metatable()
 
-    def is_common_land(card):
-        is_common = card['rarity'] == 'c'
-        is_land = bool(re.search(r'\bland\b', card['type'].lower()))
-        return is_common and is_land
+    ## Initialize Exporting Environment ##
 
     print('exporting data file for draft %s...' % draft_code)
     base_indir, base_outdir = dmtg.make_set_dirs('base')
@@ -119,6 +116,11 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
     set_extra_lists = [draft_extra_lists[draft_set_codes.index(sc)] for sc in set_codes]
 
     # Import Special Data Files for Draft Sets #
+
+    def is_common_land(card):
+        is_common = card['rarity'] == 'c'
+        is_land = bool(re.search(r'\bland\b', card['type'].lower()))
+        return is_common and is_land
 
     set_mods_list = []
     for set_code, set_cards in zip(set_codes, set_card_lists):
@@ -154,34 +156,23 @@ def export_draft_datafiles(draft_set_codes, draft_card_lists, draft_extra_lists)
 
     # Export the Data for Each Card/Extra in Draft Sets #
 
+    def get_card_str(card):
+        return datafile_templates['card'].substitute(
+            card_id=card['id'],
+            card_fid=card['fid'],
+            card_name='"%s"' % card['name'],
+            card_type='"%s"' % card['type'],
+            card_rules='"%s"' % card['rules'].replace('"', '\\"'),
+            card_colors=','.join('"%s"' % scc for scc in card['colors']),
+            card_cost=card['cost'],
+            card_rarity='"%s"' % card['rarity'],
+        )
+
     set_data_list = []
     for set_code, set_cards, set_extras, set_mods in \
             zip(set_codes, set_card_lists, set_extra_lists, set_mods_list):
-        set_card_strs = []
-        for set_card in set_cards:
-            set_card_strs.append(datafile_templates['card'].substitute(
-                card_id=set_card['id'],
-                card_fid=set_card['fid'],
-                card_name='"%s"' % set_card['name'],
-                card_type='"%s"' % set_card['type'],
-                card_rules='"%s"' % set_card['rules'].replace('"', '\\"'),
-                card_colors=','.join('"%s"' % scc for scc in set_card['colors']),
-                card_cost=set_card['cost'],
-                card_rarity='"%s"' % set_card['rarity'],
-            ))
-
-        set_extra_strs = []
-        for set_extra in set_extras:
-            set_extra_strs.append(datafile_templates['card'].substitute(
-                card_id=set_extra['id'],
-                card_fid=set_extra['fid'],
-                card_name='"%s"' % set_extra['name'],
-                card_type='"%s"' % set_extra['type'],
-                card_rules='"%s"' % set_extra['rules'].replace('"', '\\"'),
-                card_colors=','.join('"%s"' % sec for sec in set_extra['colors']),
-                card_cost=set_extra['cost'],
-                card_rarity='"%s"' % set_extra['rarity'],
-            ))
+        set_card_strs = [get_card_str(sc) for sc in set_cards]
+        set_extra_strs = [get_card_str(se) for se in set_extras]
 
         set_data_list.append(datafile_templates['set'].substitute(
             set_code=set_code.lower(),
