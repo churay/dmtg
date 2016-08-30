@@ -330,7 +330,7 @@ def fetch_card_url(set_code, card_name, card_mid):
     ## Attempt to Retrieve High-Res URL ##
 
     mtgcards_request = requests.get(mtgcards_url,
-        {'s': 'cname', 'v': 'card', 'q': '%s e:%s/en' % (card_name, set_code)})
+        {'s': 'cname', 'v': 'card', 'q': '"%s" e:%s/en' % (card_name, set_code)})
     mtgcards_htmltree = lxml.html.fromstring(mtgcards_request.content)[1]
 
     # TODO(JRC): Extend this so that all matching pages are searched if more
