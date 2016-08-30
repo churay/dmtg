@@ -114,6 +114,18 @@ end
 
 --[[ global data ]]--
 
+-- general data --
+
+local mtgdata = {}
+
+mtgdata.colors = {
+  green = {147, 203, 164},
+  red = {238, 164, 137},
+  blue = {169, 220, 239},
+  white = {249, 245, 208},
+  black = {197, 190, 184}
+}
+
 -- card data --
 
 local mtgsets = {}

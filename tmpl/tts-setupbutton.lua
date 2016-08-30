@@ -96,6 +96,7 @@ function spawnextras()
           z=extrabasepos.z-extrarow*bagdims.d
         }
 
+        -- TODO(JRC): Color this bag based on the color of the given token.
         local extrabagobj = spawnObject({
           type='Infinite_Bag',
           position={extrabagpos.x, extrabagpos.y, extrabagpos.z},
