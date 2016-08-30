@@ -96,7 +96,6 @@ function spawnextras()
           z=extrabasepos.z-extrarow*bagdims.d
         }
 
-        -- TODO(JRC): Color this bag based on the color of the given token.
         local extrabagobj = spawnObject({
           type='Infinite_Bag',
           position={extrabagpos.x, extrabagpos.y, extrabagpos.z},
@@ -109,6 +108,24 @@ function spawnextras()
         extrabagobj.lock()
         extracardobj.unlock()
         extracardobj.flip()
+
+        -- TODO(JRC): This doesn't work with set tokens because they don't
+        -- have an associated color; this should be fixed.
+        local extracolorval = {0, 0, 0}
+        for _, extracolorkey in ipairs(extraextra.colors) do
+          local colorkeyval = mtgdata.colors[extracolorkey]
+          for channelidx, channelval in ipairs(colorkeyval) do
+            extracolorval[channelidx] = extracolorval[channelidx] + channelval
+          end
+        end
+
+        local extracolorcount = #extraextra.colors ~= 0 and #extraextra.colors or 1
+        for channelidx, channelval in ipairs(extracolorval) do
+          extracolorval[channelidx] = extracolorval[channelidx] / extracolorcount
+        end
+
+        extrabagobj.setName(extraextra.name)
+        extrabagobj.setColorTint(extracolorval)
       end
     end
   end
